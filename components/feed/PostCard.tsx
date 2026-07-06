@@ -4,7 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { 
   MapPin, MessageSquare, Bookmark, ShieldAlert, Check, 
-  MoreHorizontal, Volume2, VolumeX, Sparkles, Heart, Zap, RefreshCw
+  MoreHorizontal, Volume2, VolumeX, Sparkles, Heart, Zap, RefreshCw, Sliders
 } from 'lucide-react';
 import { FeedPost, toggleBookmark, toggleFollow, getCurrentUser } from '@/lib/actions';
 import { User as UserType } from '@/lib/db';
@@ -72,6 +72,14 @@ function generateRainSamples(bufferSize: number): Float32Array {
   return data;
 }
 
+function generateHissSamples(bufferSize: number): Float32Array {
+  const data = new Float32Array(bufferSize);
+  for (let i = 0; i < bufferSize; i++) {
+    data[i] = Math.random() * 2 - 1;
+  }
+  return data;
+}
+
 export default function PostCard({ post, onRefresh }: PostCardProps) {
   const [currentUser, setCurrentUser] = React.useState<UserType | null>(null);
   const [isBookmarked, setIsBookmarked] = React.useState(post.hasBookmarked);
@@ -105,6 +113,37 @@ export default function PostCard({ post, onRefresh }: PostCardProps) {
   const [isPlayingAudio, setIsPlayingAudio] = React.useState(false);
   const audioCtxRef = React.useRef<AudioContext | null>(null);
   const audioNodesRef = React.useRef<any[]>([]);
+  const audioTimersRef = React.useRef<any[]>([]);
+
+  // Real-time Audio Mixer Controls
+  const globalGainRef = React.useRef<GainNode | null>(null);
+  const muffleFilterRef = React.useRef<BiquadFilterNode | null>(null);
+  const hissGainRef = React.useRef<GainNode | null>(null);
+
+  const [audioVolume, setAudioVolume] = React.useState(75); // 0 - 100
+  const [audioMuffle, setAudioMuffle] = React.useState(100); // 100% = clear, lower = muffled
+  const [vinylHiss, setVinylHiss] = React.useState(15); // 0 - 100
+  const [showMixer, setShowMixer] = React.useState(false);
+
+  // Real-time audio parameters updater
+  React.useEffect(() => {
+    if (globalGainRef.current && audioCtxRef.current) {
+      globalGainRef.current.gain.setValueAtTime((audioVolume / 100) * 0.25, audioCtxRef.current.currentTime);
+    }
+  }, [audioVolume]);
+
+  React.useEffect(() => {
+    if (muffleFilterRef.current && audioCtxRef.current) {
+      const freq = audioMuffle === 100 ? 12000 : Math.max(150, (audioMuffle / 100) * 4000);
+      muffleFilterRef.current.frequency.setValueAtTime(freq, audioCtxRef.current.currentTime);
+    }
+  }, [audioMuffle]);
+
+  React.useEffect(() => {
+    if (hissGainRef.current && audioCtxRef.current) {
+      hissGainRef.current.gain.setValueAtTime((vinylHiss / 100) * 0.08, audioCtxRef.current.currentTime);
+    }
+  }, [vinylHiss]);
 
   // --- 2. PULSE REACTIONS MATRIX CANVAS STATE ---
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
@@ -127,12 +166,51 @@ export default function PostCard({ post, onRefresh }: PostCardProps) {
       audioCtxRef.current = ctx;
       setIsPlayingAudio(true);
 
+      // 1. Create Core Mixer Nodes: Muffle Filter & Global Gain
+      const muffleFilter = ctx.createBiquadFilter();
+      muffleFilter.type = 'lowpass';
+      const muffleFreq = audioMuffle === 100 ? 12000 : Math.max(150, (audioMuffle / 100) * 4000);
+      muffleFilter.frequency.setValueAtTime(muffleFreq, ctx.currentTime);
+      muffleFilterRef.current = muffleFilter;
+
+      const globalGain = ctx.createGain();
+      globalGain.gain.setValueAtTime((audioVolume / 100) * 0.25, ctx.currentTime);
+      globalGainRef.current = globalGain;
+
+      // Connect Muffle Filter -> Global Gain -> Output Destination
+      muffleFilter.connect(globalGain);
+      globalGain.connect(ctx.destination);
+
+      audioNodesRef.current = [muffleFilter, globalGain];
+
+      // 2. Cozy Analog Tape Hiss / Vinyl Crackle generator
+      const hissBuffer = ctx.createBuffer(1, ctx.sampleRate * 4, ctx.sampleRate);
+      hissBuffer.getChannelData(0).set(generateHissSamples(ctx.sampleRate * 4));
+      const hissSource = ctx.createBufferSource();
+      hissSource.buffer = hissBuffer;
+      hissSource.loop = true;
+
+      const hissFilter = ctx.createBiquadFilter();
+      hissFilter.type = 'bandpass';
+      hissFilter.frequency.setValueAtTime(4500, ctx.currentTime);
+      hissFilter.Q.setValueAtTime(1.2, ctx.currentTime);
+
+      const hGain = ctx.createGain();
+      hGain.gain.setValueAtTime((vinylHiss / 100) * 0.08, ctx.currentTime);
+      hissGainRef.current = hGain;
+
+      hissSource.connect(hissFilter);
+      hissFilter.connect(hGain);
+      hGain.connect(muffleFilter); // Route through muffle so muffle filters hiss too
+      
+      hissSource.start();
+      audioNodesRef.current.push(hissSource, hissFilter, hGain);
+
+      // 3. Preset-specific Synth Generators
       const type = post.audioUrl;
       if (type === 'cyber_drone') {
-        // Deep sub-bass cinematic drone
         const osc1 = ctx.createOscillator();
         const osc2 = ctx.createOscillator();
-        const gainNode = ctx.createGain();
         const filter = ctx.createBiquadFilter();
 
         osc1.type = 'sawtooth';
@@ -144,20 +222,15 @@ export default function PostCard({ post, onRefresh }: PostCardProps) {
         filter.type = 'lowpass';
         filter.frequency.setValueAtTime(120, ctx.currentTime);
 
-        gainNode.gain.setValueAtTime(0.18, ctx.currentTime);
-
         osc1.connect(filter);
         osc2.connect(filter);
-        filter.connect(gainNode);
-        gainNode.connect(ctx.destination);
+        filter.connect(muffleFilter);
 
         osc1.start();
         osc2.start();
-        audioNodesRef.current = [osc1, osc2, gainNode];
+        audioNodesRef.current.push(osc1, osc2, filter);
       } else if (type === 'neon_synth') {
-        // Pulsing neo-tokyo synth bass
         const osc = ctx.createOscillator();
-        const gainNode = ctx.createGain();
         const filter = ctx.createBiquadFilter();
 
         osc.type = 'triangle';
@@ -165,8 +238,6 @@ export default function PostCard({ post, onRefresh }: PostCardProps) {
 
         filter.type = 'lowpass';
         filter.frequency.setValueAtTime(250, ctx.currentTime);
-
-        gainNode.gain.setValueAtTime(0.22, ctx.currentTime);
 
         const lfo = ctx.createOscillator();
         const lfoGain = ctx.createGain();
@@ -177,14 +248,12 @@ export default function PostCard({ post, onRefresh }: PostCardProps) {
         lfoGain.connect(filter.frequency);
 
         osc.connect(filter);
-        filter.connect(gainNode);
-        gainNode.connect(ctx.destination);
+        filter.connect(muffleFilter);
 
         osc.start();
         lfo.start();
-        audioNodesRef.current = [osc, lfo, gainNode];
+        audioNodesRef.current.push(osc, filter, lfo, lfoGain);
       } else if (type === 'rainy_jazz') {
-        // Soothing vinyl static & rainy noise block
         const bufferSize = ctx.sampleRate * 2;
         const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
         const output = noiseBuffer.getChannelData(0);
@@ -204,10 +273,9 @@ export default function PostCard({ post, onRefresh }: PostCardProps) {
 
         whiteNoise.connect(filter);
         filter.connect(noiseGain);
-        noiseGain.connect(ctx.destination);
+        noiseGain.connect(muffleFilter);
         whiteNoise.start();
 
-        // Slow soft electric jazz chords synth
         const osc = ctx.createOscillator();
         osc.type = 'sine';
         osc.frequency.value = 220;
@@ -215,12 +283,11 @@ export default function PostCard({ post, onRefresh }: PostCardProps) {
         padGain.gain.value = 0.08;
 
         osc.connect(padGain);
-        padGain.connect(ctx.destination);
+        padGain.connect(muffleFilter);
         osc.start();
 
-        audioNodesRef.current = [whiteNoise, osc, noiseGain, padGain];
+        audioNodesRef.current.push(whiteNoise, filter, noiseGain, osc, padGain);
       } else if (type === 'vapor_echo') {
-        // Ethereal echoed retro key block
         const osc = ctx.createOscillator();
         const delay = ctx.createDelay();
         const feedback = ctx.createGain();
@@ -234,15 +301,287 @@ export default function PostCard({ post, onRefresh }: PostCardProps) {
         gain.gain.value = 0.12;
 
         osc.connect(gain);
-        gain.connect(ctx.destination);
+        gain.connect(muffleFilter);
 
         osc.connect(delay);
         delay.connect(feedback);
         feedback.connect(delay);
-        delay.connect(ctx.destination);
+        delay.connect(muffleFilter);
 
         osc.start();
-        audioNodesRef.current = [osc, delay, gain];
+        audioNodesRef.current.push(osc, delay, feedback, gain);
+      } else if (type === 'campfire_wind') {
+        // Wind noise
+        const bufferSize = ctx.sampleRate * 2;
+        const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        output.set(generateRainSamples(bufferSize));
+
+        const windSource = ctx.createBufferSource();
+        windSource.buffer = noiseBuffer;
+        windSource.loop = true;
+
+        const windFilter = ctx.createBiquadFilter();
+        windFilter.type = 'bandpass';
+        windFilter.frequency.setValueAtTime(400, ctx.currentTime);
+        windFilter.Q.setValueAtTime(1.0, ctx.currentTime);
+
+        const windGain = ctx.createGain();
+        windGain.gain.setValueAtTime(0.05, ctx.currentTime);
+
+        // Wind LFO
+        const windLfo = ctx.createOscillator();
+        const windLfoGain = ctx.createGain();
+        windLfo.frequency.setValueAtTime(0.2, ctx.currentTime); // very slow gusts
+        windLfoGain.gain.setValueAtTime(150, ctx.currentTime);
+
+        windLfo.connect(windLfoGain);
+        windLfoGain.connect(windFilter.frequency);
+
+        windSource.connect(windFilter);
+        windFilter.connect(windGain);
+        windGain.connect(muffleFilter);
+
+        windSource.start();
+        windLfo.start();
+
+        // Base fire hum
+        const humOsc = ctx.createOscillator();
+        const humGain = ctx.createGain();
+        humOsc.type = 'triangle';
+        humOsc.frequency.setValueAtTime(80, ctx.currentTime);
+        humGain.gain.setValueAtTime(0.12, ctx.currentTime);
+        humOsc.connect(humGain);
+        humGain.connect(muffleFilter);
+        humOsc.start();
+
+        audioNodesRef.current.push(windSource, windFilter, windGain, windLfo, windLfoGain, humOsc, humGain);
+
+        // Periodic random campfire snaps & crackles
+        const triggerSnap = () => {
+          if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') return;
+          try {
+            const osc = ctx.createOscillator();
+            const gainNode = ctx.createGain();
+            osc.type = Math.random() > 0.5 ? 'sawtooth' : 'triangle';
+            osc.frequency.setValueAtTime(Math.random() * 1200 + 350, ctx.currentTime);
+            
+            // sharp envelope
+            gainNode.gain.setValueAtTime(0.04, ctx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.04);
+            
+            osc.connect(gainNode);
+            gainNode.connect(muffleFilter);
+            
+            osc.start();
+            osc.stop(ctx.currentTime + 0.05);
+          } catch {}
+
+          const nextInterval = Math.random() * 600 + 150;
+          const timerId = setTimeout(triggerSnap, nextInterval);
+          audioTimersRef.current.push(timerId);
+        };
+        triggerSnap();
+      } else if (type === 'forest_brook') {
+        // Gurgling brook noise
+        const bufferSize = ctx.sampleRate * 2;
+        const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        output.set(generateRainSamples(bufferSize));
+
+        const brookSource = ctx.createBufferSource();
+        brookSource.buffer = noiseBuffer;
+        brookSource.loop = true;
+
+        const brookFilter = ctx.createBiquadFilter();
+        brookFilter.type = 'bandpass';
+        brookFilter.frequency.setValueAtTime(450, ctx.currentTime);
+        brookFilter.Q.setValueAtTime(1.5, ctx.currentTime);
+
+        const brookGain = ctx.createGain();
+        brookGain.gain.setValueAtTime(0.06, ctx.currentTime);
+
+        // Brook LFO for gurgling rhythm
+        const brookLfo = ctx.createOscillator();
+        const brookLfoGain = ctx.createGain();
+        brookLfo.frequency.setValueAtTime(6.0, ctx.currentTime); // 6Hz bubble rate
+        brookLfoGain.gain.setValueAtTime(90, ctx.currentTime);
+
+        brookLfo.connect(brookLfoGain);
+        brookLfoGain.connect(brookFilter.frequency);
+
+        brookSource.connect(brookFilter);
+        brookFilter.connect(brookGain);
+        brookGain.connect(muffleFilter);
+
+        brookSource.start();
+        brookLfo.start();
+
+        audioNodesRef.current.push(brookSource, brookFilter, brookGain, brookLfo, brookLfoGain);
+
+        // Periodic forest bird chirps
+        const triggerChirp = () => {
+          if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') return;
+          try {
+            const now = ctx.currentTime;
+            const count = Math.floor(Math.random() * 3) + 2; // 2 to 4 rapid chirps
+            for (let i = 0; i < count; i++) {
+              const osc = ctx.createOscillator();
+              const gainNode = ctx.createGain();
+              osc.type = 'sine';
+              
+              const startFreq = Math.random() * 600 + 1800;
+              const endFreq = startFreq + Math.random() * 1000 + 400;
+              const tStart = now + i * 0.12;
+              const tEnd = tStart + 0.08;
+
+              osc.frequency.setValueAtTime(startFreq, tStart);
+              osc.frequency.exponentialRampToValueAtTime(endFreq, tEnd);
+
+              gainNode.gain.setValueAtTime(0.02, tStart);
+              gainNode.gain.exponentialRampToValueAtTime(0.0001, tEnd);
+
+              osc.connect(gainNode);
+              gainNode.connect(muffleFilter);
+
+              osc.start(tStart);
+              osc.stop(tEnd + 0.01);
+            }
+          } catch {}
+
+          const nextInterval = Math.random() * 3000 + 2000; // birds chirp every 2-5s
+          const timerId = setTimeout(triggerChirp, nextInterval);
+          audioTimersRef.current.push(timerId);
+        };
+        triggerChirp();
+      } else if (type === 'coffee_shop') {
+        // Coffee shop murmur base
+        const bufferSize = ctx.sampleRate * 2;
+        const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        output.set(generateRainSamples(bufferSize));
+
+        const baseNoise = ctx.createBufferSource();
+        baseNoise.buffer = noiseBuffer;
+        baseNoise.loop = true;
+
+        const lowpass = ctx.createBiquadFilter();
+        lowpass.type = 'lowpass';
+        lowpass.frequency.setValueAtTime(180, ctx.currentTime); // muffled chatter low frequencies
+
+        const noiseGain = ctx.createGain();
+        noiseGain.gain.setValueAtTime(0.08, ctx.currentTime);
+
+        baseNoise.connect(lowpass);
+        lowpass.connect(noiseGain);
+        noiseGain.connect(muffleFilter);
+        baseNoise.start();
+
+        // Slow soft Rhodes-like chord drone
+        const chordOsc1 = ctx.createOscillator();
+        const chordOsc2 = ctx.createOscillator();
+        const chordGain = ctx.createGain();
+        chordOsc1.type = 'sine';
+        chordOsc2.type = 'sine';
+        
+        chordOsc1.frequency.setValueAtTime(196.00, ctx.currentTime); // G3
+        chordOsc2.frequency.setValueAtTime(246.94, ctx.currentTime); // B3
+
+        chordGain.gain.setValueAtTime(0.06, ctx.currentTime);
+
+        chordOsc1.connect(chordGain);
+        chordOsc2.connect(chordGain);
+        chordGain.connect(muffleFilter);
+
+        chordOsc1.start();
+        chordOsc2.start();
+
+        audioNodesRef.current.push(baseNoise, lowpass, noiseGain, chordOsc1, chordOsc2, chordGain);
+
+        // Periodic ceramic cup clinks
+        const triggerClink = () => {
+          if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') return;
+          try {
+            const osc = ctx.createOscillator();
+            const gainNode = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(Math.random() * 1000 + 1500, ctx.currentTime);
+            
+            gainNode.gain.setValueAtTime(0.012, ctx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.18);
+            
+            osc.connect(gainNode);
+            gainNode.connect(muffleFilter);
+            
+            osc.start();
+            osc.stop(ctx.currentTime + 0.2);
+          } catch {}
+
+          const nextInterval = Math.random() * 4000 + 1500; // cup clinks every 1.5 - 5.5s
+          const timerId = setTimeout(triggerClink, nextInterval);
+          audioTimersRef.current.push(timerId);
+        };
+        triggerClink();
+      } else if (type === 'heavy_rain') {
+        // Rain noise
+        const bufferSize = ctx.sampleRate * 2;
+        const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        output.set(generateRainSamples(bufferSize));
+
+        const rainSource = ctx.createBufferSource();
+        rainSource.buffer = noiseBuffer;
+        rainSource.loop = true;
+
+        const rainFilter = ctx.createBiquadFilter();
+        rainFilter.type = 'lowpass';
+        rainFilter.frequency.setValueAtTime(650, ctx.currentTime);
+
+        const rainGain = ctx.createGain();
+        rainGain.gain.setValueAtTime(0.08, ctx.currentTime);
+
+        rainSource.connect(rainFilter);
+        rainFilter.connect(rainGain);
+        rainGain.connect(muffleFilter);
+
+        rainSource.start();
+
+        audioNodesRef.current.push(rainSource, rainFilter, rainGain);
+
+        // Periodic thunder rolls
+        const triggerThunder = () => {
+          if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') return;
+          try {
+            const thunderOsc = ctx.createOscillator();
+            const thunderFilter = ctx.createBiquadFilter();
+            const thunderGain = ctx.createGain();
+
+            thunderOsc.type = 'sawtooth';
+            thunderOsc.frequency.setValueAtTime(45, ctx.currentTime);
+
+            thunderFilter.type = 'lowpass';
+            thunderFilter.frequency.setValueAtTime(65, ctx.currentTime);
+
+            thunderGain.gain.setValueAtTime(0.001, ctx.currentTime);
+            thunderGain.gain.linearRampToValueAtTime(0.09, ctx.currentTime + 1.2);
+            thunderGain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 6.0);
+            
+            thunderFilter.frequency.exponentialRampToValueAtTime(25, ctx.currentTime + 5.5);
+
+            thunderOsc.connect(thunderFilter);
+            thunderFilter.connect(thunderGain);
+            thunderGain.connect(muffleFilter);
+
+            thunderOsc.start();
+            thunderOsc.stop(ctx.currentTime + 6.5);
+          } catch {}
+
+          const nextInterval = Math.random() * 10000 + 8000; // thunder rolls every 8-18s
+          const timerId = setTimeout(triggerThunder, nextInterval);
+          audioTimersRef.current.push(timerId);
+        };
+        const initialThunderId = setTimeout(triggerThunder, 3000);
+        audioTimersRef.current.push(initialThunderId);
       }
     } catch (e) {
       console.error('Failed to trigger audio synth loop:', e);
@@ -251,6 +590,14 @@ export default function PostCard({ post, onRefresh }: PostCardProps) {
 
   const stopAudioLoop = () => {
     setIsPlayingAudio(false);
+    audioTimersRef.current.forEach(timer => {
+      try {
+        clearTimeout(timer);
+        clearInterval(timer);
+      } catch {}
+    });
+    audioTimersRef.current = [];
+
     audioNodesRef.current.forEach(node => {
       try {
         node.stop();
@@ -263,6 +610,9 @@ export default function PostCard({ post, onRefresh }: PostCardProps) {
       } catch {}
       audioCtxRef.current = null;
     }
+    globalGainRef.current = null;
+    muffleFilterRef.current = null;
+    hissGainRef.current = null;
   };
 
   React.useEffect(() => {
@@ -646,36 +996,127 @@ export default function PostCard({ post, onRefresh }: PostCardProps) {
 
         {/* Floating Equalizer button overlay if audio attachment exists */}
         {post.audioUrl && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleAudioToggle();
-            }}
-            className={cn(
-              "absolute top-4 right-4 p-2 rounded-full border backdrop-blur-md cursor-pointer transition-all flex items-center justify-center gap-1.5 z-20 shadow-lg",
-              isPlayingAudio 
-                ? "bg-teal-950/90 border-teal-500 text-teal-300 shadow-[0_0_12px_rgba(45,212,191,0.3)] animate-pulse"
-                : "bg-black/75 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700"
-            )}
-            title={isPlayingAudio ? "Stop Audio Loop" : "Play Ambient Loop"}
-          >
-            {isPlayingAudio ? (
-              <>
-                <Volume2 className="w-3.5 h-3.5 text-teal-400" />
-                <div className="flex items-end gap-0.5 h-3 w-5">
-                  <span className="w-0.5 h-2.5 bg-teal-400 animate-bounce" style={{ animationDelay: '0.1s' }} />
-                  <span className="w-0.5 h-1.5 bg-teal-400 animate-bounce" style={{ animationDelay: '0.2s' }} />
-                  <span className="w-0.5 h-3 bg-teal-400 animate-bounce" style={{ animationDelay: '0.3s' }} />
+          <div className="absolute top-4 right-4 flex flex-col items-end gap-2 z-20">
+            <div className="flex items-center gap-1.5">
+              {isPlayingAudio && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowMixer(!showMixer);
+                  }}
+                  className={cn(
+                    "p-2 rounded-full border backdrop-blur-md cursor-pointer transition-all flex items-center justify-center shadow-lg",
+                    showMixer
+                      ? "bg-violet-950/90 border-violet-500 text-violet-300"
+                      : "bg-black/75 border-slate-800 text-slate-400 hover:text-white"
+                  )}
+                  title="Acoustic Comfort Mixer"
+                >
+                  <Sliders className="w-3.5 h-3.5" />
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleAudioToggle();
+                  if (isPlayingAudio) setShowMixer(false);
+                }}
+                className={cn(
+                  "p-2 rounded-full border backdrop-blur-md cursor-pointer transition-all flex items-center justify-center gap-1.5 shadow-lg",
+                  isPlayingAudio 
+                    ? "bg-teal-950/90 border-teal-500 text-teal-300 shadow-[0_0_12px_rgba(45,212,191,0.3)] animate-pulse"
+                    : "bg-black/75 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700"
+                )}
+                title={isPlayingAudio ? "Stop Audio Loop" : "Play Ambient Loop"}
+              >
+                {isPlayingAudio ? (
+                  <>
+                    <Volume2 className="w-3.5 h-3.5 text-teal-400" />
+                    <div className="flex items-end gap-0.5 h-3 w-5">
+                      <span className="w-0.5 h-2.5 bg-teal-400 animate-bounce" style={{ animationDelay: '0.1s' }} />
+                      <span className="w-0.5 h-1.5 bg-teal-400 animate-bounce" style={{ animationDelay: '0.2s' }} />
+                      <span className="w-0.5 h-3 bg-teal-400 animate-bounce" style={{ animationDelay: '0.3s' }} />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <VolumeX className="w-3.5 h-3.5" />
+                    <span className="text-[8px] font-mono tracking-widest font-bold uppercase">OFF</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Expended Sensory Vibe / Acoustic Comfort Mixer Board */}
+            {isPlayingAudio && showMixer && (
+              <div 
+                className="p-3 w-56 rounded-xl border border-slate-800 bg-slate-950/95 backdrop-blur-md shadow-2xl text-left flex flex-col gap-2.5 transition-all text-xs text-slate-200"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between border-b border-slate-900 pb-1.5 mb-0.5">
+                  <span className="font-bold tracking-wider text-[10px] uppercase text-teal-400 flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 animate-pulse" />
+                    Acoustic Comfort
+                  </span>
+                  <span className="text-[9px] font-mono text-slate-500">Live Synthesis</span>
                 </div>
-              </>
-            ) : (
-              <>
-                <VolumeX className="w-3.5 h-3.5" />
-                <span className="text-[8px] font-mono tracking-widest font-bold uppercase">OFF</span>
-              </>
+
+                {/* Slider 1: Master Volume */}
+                <div className="flex flex-col gap-1">
+                  <div className="flex justify-between items-center text-[10px]">
+                    <span className="text-slate-400">Master Level</span>
+                    <span className="font-mono text-teal-400">{audioVolume}%</span>
+                  </div>
+                  <input 
+                    type="range" 
+                    min="0" 
+                    max="100" 
+                    value={audioVolume}
+                    onChange={(e) => setAudioVolume(Number(e.target.value))}
+                    className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-teal-400"
+                  />
+                </div>
+
+                {/* Slider 2: Cozy Blanket Muffle filter */}
+                <div className="flex flex-col gap-1">
+                  <div className="flex justify-between items-center text-[10px]">
+                    <span className="text-slate-400 flex items-center gap-1">
+                      Cozy Muffle ☁️
+                    </span>
+                    <span className="font-mono text-violet-400">{audioMuffle === 100 ? 'Clear 🍃' : `${audioMuffle}%`}</span>
+                  </div>
+                  <input 
+                    type="range" 
+                    min="5" 
+                    max="100" 
+                    value={audioMuffle}
+                    onChange={(e) => setAudioMuffle(Number(e.target.value))}
+                    className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-violet-400"
+                  />
+                  <span className="text-[8px] text-slate-500 italic">Simulates listening through glass or cozy blankets</span>
+                </div>
+
+                {/* Slider 3: Vintage Tape Vinyl Hiss level */}
+                <div className="flex flex-col gap-1">
+                  <div className="flex justify-between items-center text-[10px]">
+                    <span className="text-slate-400">Analog Hiss & Crackle 📻</span>
+                    <span className="font-mono text-amber-400">{vinylHiss}%</span>
+                  </div>
+                  <input 
+                    type="range" 
+                    min="0" 
+                    max="100" 
+                    value={vinylHiss}
+                    onChange={(e) => setVinylHiss(Number(e.target.value))}
+                    className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-400"
+                  />
+                </div>
+              </div>
             )}
-          </button>
+          </div>
         )}
       </div>
 

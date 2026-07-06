@@ -75,6 +75,256 @@ export default function CozyNeighborsPage() {
   // Soundscape Playing State (Feature 10)
   const [playingSoundId, setPlayingSoundId] = React.useState<string | null>(null);
 
+  // Web Audio refs for neighborhood soundscapes
+  const audioCtxRef = React.useRef<AudioContext | null>(null);
+  const audioNodesRef = React.useRef<any[]>([]);
+  const audioTimersRef = React.useRef<any[]>([]);
+
+  const stopNeighborhoodSound = () => {
+    audioTimersRef.current.forEach(timer => {
+      try {
+        clearTimeout(timer);
+        clearInterval(timer);
+      } catch {}
+    });
+    audioTimersRef.current = [];
+
+    audioNodesRef.current.forEach(node => {
+      try {
+        node.stop();
+      } catch {}
+    });
+    audioNodesRef.current = [];
+    if (audioCtxRef.current) {
+      try {
+        audioCtxRef.current.close();
+      } catch {}
+      audioCtxRef.current = null;
+    }
+  };
+
+  const startNeighborhoodSound = (sound: any) => {
+    stopNeighborhoodSound();
+
+    try {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContextClass) return;
+
+      const ctx = new AudioContextClass();
+      audioCtxRef.current = ctx;
+
+      const title = sound.title.toLowerCase();
+      const audioUrl = sound.audioDataUrl || '';
+
+      const muffleFilter = ctx.createBiquadFilter();
+      muffleFilter.type = 'lowpass';
+      muffleFilter.frequency.setValueAtTime(3200, ctx.currentTime);
+
+      const globalGain = ctx.createGain();
+      globalGain.gain.setValueAtTime(0.2, ctx.currentTime);
+
+      muffleFilter.connect(globalGain);
+      globalGain.connect(ctx.destination);
+
+      audioNodesRef.current = [muffleFilter, globalGain];
+
+      const generateRainSamples = (size: number) => {
+        const d = new Float32Array(size);
+        for (let i = 0; i < d.length; i++) {
+          d[i] = Math.random() * 2 - 1;
+        }
+        return d;
+      };
+
+      if (audioUrl === 'simulated_rain' || title.includes('rain') || title.includes('canopy')) {
+        // Raindrops soundscape
+        const bufferSize = ctx.sampleRate * 2;
+        const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        noiseBuffer.getChannelData(0).set(generateRainSamples(bufferSize));
+
+        const rainSource = ctx.createBufferSource();
+        rainSource.buffer = noiseBuffer;
+        rainSource.loop = true;
+
+        const rainFilter = ctx.createBiquadFilter();
+        rainFilter.type = 'lowpass';
+        rainFilter.frequency.setValueAtTime(600, ctx.currentTime);
+
+        const rainGain = ctx.createGain();
+        rainGain.gain.setValueAtTime(0.12, ctx.currentTime);
+
+        rainSource.connect(rainFilter);
+        rainFilter.connect(rainGain);
+        rainGain.connect(muffleFilter);
+
+        rainSource.start();
+        audioNodesRef.current.push(rainSource, rainFilter, rainGain);
+
+        // Slow soft thunder rolls
+        const triggerThunder = () => {
+          if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') return;
+          try {
+            const thunderOsc = ctx.createOscillator();
+            const thunderFilter = ctx.createBiquadFilter();
+            const thunderGain = ctx.createGain();
+
+            thunderOsc.type = 'sawtooth';
+            thunderOsc.frequency.setValueAtTime(45, ctx.currentTime);
+
+            thunderFilter.type = 'lowpass';
+            thunderFilter.frequency.setValueAtTime(65, ctx.currentTime);
+
+            thunderGain.gain.setValueAtTime(0.001, ctx.currentTime);
+            thunderGain.gain.linearRampToValueAtTime(0.08, ctx.currentTime + 1.2);
+            thunderGain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 5.5);
+
+            thunderOsc.connect(thunderFilter);
+            thunderFilter.connect(thunderGain);
+            thunderGain.connect(muffleFilter);
+
+            thunderOsc.start();
+            thunderOsc.stop(ctx.currentTime + 6.0);
+          } catch {}
+
+          const nextInterval = Math.random() * 8000 + 7000;
+          const timerId = setTimeout(triggerThunder, nextInterval);
+          audioTimersRef.current.push(timerId);
+        };
+        const timerId = setTimeout(triggerThunder, 3000);
+        audioTimersRef.current.push(timerId);
+
+      } else if (audioUrl === 'simulated_birds' || title.includes('bird') || title.includes('swallow') || title.includes('chirp')) {
+        // Brook & bird chirping soundscape
+        const bufferSize = ctx.sampleRate * 2;
+        const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        noiseBuffer.getChannelData(0).set(generateRainSamples(bufferSize));
+
+        const brookSource = ctx.createBufferSource();
+        brookSource.buffer = noiseBuffer;
+        brookSource.loop = true;
+
+        const brookFilter = ctx.createBiquadFilter();
+        brookFilter.type = 'bandpass';
+        brookFilter.frequency.setValueAtTime(420, ctx.currentTime);
+        brookFilter.Q.setValueAtTime(1.5, ctx.currentTime);
+
+        const brookGain = ctx.createGain();
+        brookGain.gain.setValueAtTime(0.08, ctx.currentTime);
+
+        const brookLfo = ctx.createOscillator();
+        const brookLfoGain = ctx.createGain();
+        brookLfo.frequency.setValueAtTime(5.5, ctx.currentTime);
+        brookLfoGain.gain.setValueAtTime(80, ctx.currentTime);
+
+        brookLfo.connect(brookLfoGain);
+        brookLfoGain.connect(brookFilter.frequency);
+
+        brookSource.connect(brookFilter);
+        brookFilter.connect(brookGain);
+        brookGain.connect(muffleFilter);
+
+        brookSource.start();
+        brookLfo.start();
+
+        audioNodesRef.current.push(brookSource, brookFilter, brookGain, brookLfo, brookLfoGain);
+
+        // Birds chirps
+        const triggerChirp = () => {
+          if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') return;
+          try {
+            const now = ctx.currentTime;
+            const count = Math.floor(Math.random() * 3) + 2;
+            for (let i = 0; i < count; i++) {
+              const osc = ctx.createOscillator();
+              const gainNode = ctx.createGain();
+              osc.type = 'sine';
+
+              const startFreq = Math.random() * 500 + 1900;
+              const endFreq = startFreq + Math.random() * 800 + 300;
+              const tStart = now + i * 0.12;
+              const tEnd = tStart + 0.08;
+
+              osc.frequency.setValueAtTime(startFreq, tStart);
+              osc.frequency.exponentialRampToValueAtTime(endFreq, tEnd);
+
+              gainNode.gain.setValueAtTime(0.02, tStart);
+              gainNode.gain.exponentialRampToValueAtTime(0.0001, tEnd);
+
+              osc.connect(gainNode);
+              gainNode.connect(muffleFilter);
+
+              osc.start(tStart);
+              osc.stop(tEnd + 0.01);
+            }
+          } catch {}
+
+          const nextInterval = Math.random() * 4000 + 2000;
+          const timerId = setTimeout(triggerChirp, nextInterval);
+          audioTimersRef.current.push(timerId);
+        };
+        triggerChirp();
+
+      } else {
+        // General warm neighborhood hum / lawn mower / wind / fountain drone
+        const osc1 = ctx.createOscillator();
+        const osc2 = ctx.createOscillator();
+        const filter = ctx.createBiquadFilter();
+
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(110, ctx.currentTime); // Low A
+
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(110.4, ctx.currentTime); // Detuned
+
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(280, ctx.currentTime);
+
+        osc1.connect(filter);
+        osc2.connect(filter);
+        filter.connect(muffleFilter);
+
+        osc1.start();
+        osc2.start();
+
+        audioNodesRef.current.push(osc1, osc2, filter);
+
+        // Gentle cricket chirps or background wind sweeps
+        const triggerCricket = () => {
+          if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') return;
+          try {
+            const osc = ctx.createOscillator();
+            const gainNode = ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(4200, ctx.currentTime);
+
+            gainNode.gain.setValueAtTime(0.005, ctx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.15);
+
+            osc.connect(gainNode);
+            gainNode.connect(muffleFilter);
+
+            osc.start();
+            osc.stop(ctx.currentTime + 0.16);
+          } catch {}
+
+          const nextInterval = Math.random() * 2000 + 800;
+          const timerId = setTimeout(triggerCricket, nextInterval);
+          audioTimersRef.current.push(timerId);
+        };
+        triggerCricket();
+      }
+
+    } catch (e) {
+      console.error('Neighborhood soundscape play failed:', e);
+    }
+  };
+
+  React.useEffect(() => {
+    return () => {
+      stopNeighborhoodSound();
+    };
+  }, []);
+
   // Selected Hub Tab
   const [activeTab, setActiveTab] = React.useState<'board' | 'strolls' | 'sky' | 'kitchen' | 'wisdom' | 'kindness' | 'sounds'>('board');
 
@@ -1132,7 +1382,15 @@ export default function CozyNeighborsPage() {
                     >
                       <div className="flex items-center gap-3">
                         <button
-                          onClick={() => setPlayingSoundId(isPlaying ? null : sound.id)}
+                          onClick={() => {
+                            if (isPlaying) {
+                              setPlayingSoundId(null);
+                              stopNeighborhoodSound();
+                            } else {
+                              setPlayingSoundId(sound.id);
+                              startNeighborhoodSound(sound);
+                            }
+                          }}
                           className={cn(
                             "w-10 h-10 rounded-full border flex items-center justify-center cursor-pointer transition-all",
                             isPlaying 

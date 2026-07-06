@@ -86,6 +86,7 @@ export default function CreatePostModal({ isOpen, onClose, currentUser }: Create
   const [isPlayingPreview, setIsPlayingPreview] = React.useState(false);
   const audioCtxRef = React.useRef<AudioContext | null>(null);
   const audioNodesRef = React.useRef<any[]>([]);
+  const audioTimersRef = React.useRef<any[]>([]);
 
   // 7. VECTOR TEXT PANEL (Markdown mini-blog)
   const [hasVectorPanel, setHasVectorPanel] = React.useState(false);
@@ -242,6 +243,279 @@ export default function CreatePostModal({ isOpen, onClose, currentUser }: Create
 
         osc.start();
         audioNodesRef.current = [osc, delay, gain];
+      } else if (type === 'campfire_wind') {
+        // Wind noise
+        const bufferSize = ctx.sampleRate * 2;
+        const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        output.set(generateRainSamples(bufferSize));
+
+        const windSource = ctx.createBufferSource();
+        windSource.buffer = noiseBuffer;
+        windSource.loop = true;
+
+        const windFilter = ctx.createBiquadFilter();
+        windFilter.type = 'bandpass';
+        windFilter.frequency.setValueAtTime(400, ctx.currentTime);
+        windFilter.Q.setValueAtTime(1.0, ctx.currentTime);
+
+        const windGain = ctx.createGain();
+        windGain.gain.setValueAtTime(0.05, ctx.currentTime);
+
+        // Wind LFO
+        const windLfo = ctx.createOscillator();
+        const windLfoGain = ctx.createGain();
+        windLfo.frequency.setValueAtTime(0.2, ctx.currentTime); // very slow gusts
+        windLfoGain.gain.setValueAtTime(150, ctx.currentTime);
+
+        windLfo.connect(windLfoGain);
+        windLfoGain.connect(windFilter.frequency);
+
+        windSource.connect(windFilter);
+        windFilter.connect(windGain);
+        windGain.connect(ctx.destination);
+
+        windSource.start();
+        windLfo.start();
+
+        // Base fire hum
+        const humOsc = ctx.createOscillator();
+        const humGain = ctx.createGain();
+        humOsc.type = 'triangle';
+        humOsc.frequency.setValueAtTime(80, ctx.currentTime);
+        humGain.gain.setValueAtTime(0.12, ctx.currentTime);
+        humOsc.connect(humGain);
+        humGain.connect(ctx.destination);
+        humOsc.start();
+
+        audioNodesRef.current = [windSource, windLfo, humOsc, windGain, humGain];
+
+        // Periodic random campfire snaps & crackles
+        const triggerSnap = () => {
+          if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') return;
+          try {
+            const osc = ctx.createOscillator();
+            const gainNode = ctx.createGain();
+            osc.type = Math.random() > 0.5 ? 'sawtooth' : 'triangle';
+            osc.frequency.setValueAtTime(Math.random() * 1200 + 350, ctx.currentTime);
+            
+            // sharp envelope
+            gainNode.gain.setValueAtTime(0.04, ctx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.04);
+            
+            osc.connect(gainNode);
+            gainNode.connect(ctx.destination);
+            
+            osc.start();
+            osc.stop(ctx.currentTime + 0.05);
+          } catch {}
+
+          const nextInterval = Math.random() * 600 + 150;
+          const timerId = setTimeout(triggerSnap, nextInterval);
+          audioTimersRef.current.push(timerId);
+        };
+        triggerSnap();
+      } else if (type === 'forest_brook') {
+        // Gurgling brook noise
+        const bufferSize = ctx.sampleRate * 2;
+        const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        output.set(generateRainSamples(bufferSize));
+
+        const brookSource = ctx.createBufferSource();
+        brookSource.buffer = noiseBuffer;
+        brookSource.loop = true;
+
+        const brookFilter = ctx.createBiquadFilter();
+        brookFilter.type = 'bandpass';
+        brookFilter.frequency.setValueAtTime(450, ctx.currentTime);
+        brookFilter.Q.setValueAtTime(1.5, ctx.currentTime);
+
+        const brookGain = ctx.createGain();
+        brookGain.gain.setValueAtTime(0.06, ctx.currentTime);
+
+        // Brook LFO for gurgling rhythm
+        const brookLfo = ctx.createOscillator();
+        const brookLfoGain = ctx.createGain();
+        brookLfo.frequency.setValueAtTime(6.0, ctx.currentTime); // 6Hz bubble rate
+        brookLfoGain.gain.setValueAtTime(90, ctx.currentTime);
+
+        brookLfo.connect(brookLfoGain);
+        brookLfoGain.connect(brookFilter.frequency);
+
+        brookSource.connect(brookFilter);
+        brookFilter.connect(brookGain);
+        brookGain.connect(ctx.destination);
+
+        brookSource.start();
+        brookLfo.start();
+
+        audioNodesRef.current = [brookSource, brookLfo, brookGain];
+
+        // Periodic forest bird chirps
+        const triggerChirp = () => {
+          if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') return;
+          try {
+            const now = ctx.currentTime;
+            const count = Math.floor(Math.random() * 3) + 2; // 2 to 4 rapid chirps
+            for (let i = 0; i < count; i++) {
+              const osc = ctx.createOscillator();
+              const gainNode = ctx.createGain();
+              osc.type = 'sine';
+              
+              const startFreq = Math.random() * 600 + 1800;
+              const endFreq = startFreq + Math.random() * 1000 + 400;
+              const tStart = now + i * 0.12;
+              const tEnd = tStart + 0.08;
+
+              osc.frequency.setValueAtTime(startFreq, tStart);
+              osc.frequency.exponentialRampToValueAtTime(endFreq, tEnd);
+
+              gainNode.gain.setValueAtTime(0.02, tStart);
+              gainNode.gain.exponentialRampToValueAtTime(0.0001, tEnd);
+
+              osc.connect(gainNode);
+              gainNode.connect(ctx.destination);
+
+              osc.start(tStart);
+              osc.stop(tEnd + 0.01);
+            }
+          } catch {}
+
+          const nextInterval = Math.random() * 3000 + 2000; // birds chirp every 2-5s
+          const timerId = setTimeout(triggerChirp, nextInterval);
+          audioTimersRef.current.push(timerId);
+        };
+        triggerChirp();
+      } else if (type === 'coffee_shop') {
+        // Coffee shop murmur base
+        const bufferSize = ctx.sampleRate * 2;
+        const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        output.set(generateRainSamples(bufferSize));
+
+        const baseNoise = ctx.createBufferSource();
+        baseNoise.buffer = noiseBuffer;
+        baseNoise.loop = true;
+
+        const lowpass = ctx.createBiquadFilter();
+        lowpass.type = 'lowpass';
+        lowpass.frequency.setValueAtTime(180, ctx.currentTime); // muffled chatter low frequencies
+
+        const noiseGain = ctx.createGain();
+        noiseGain.gain.setValueAtTime(0.08, ctx.currentTime);
+
+        baseNoise.connect(lowpass);
+        lowpass.connect(noiseGain);
+        noiseGain.connect(ctx.destination);
+        baseNoise.start();
+
+        // Slow soft Rhodes-like chord drone
+        const chordOsc1 = ctx.createOscillator();
+        const chordOsc2 = ctx.createOscillator();
+        const chordGain = ctx.createGain();
+        chordOsc1.type = 'sine';
+        chordOsc2.type = 'sine';
+        
+        chordOsc1.frequency.setValueAtTime(196.00, ctx.currentTime); // G3
+        chordOsc2.frequency.setValueAtTime(246.94, ctx.currentTime); // B3
+
+        chordGain.gain.setValueAtTime(0.06, ctx.currentTime);
+
+        chordOsc1.connect(chordGain);
+        chordOsc2.connect(chordGain);
+        chordGain.connect(ctx.destination);
+
+        chordOsc1.start();
+        chordOsc2.start();
+
+        audioNodesRef.current = [baseNoise, chordOsc1, chordOsc2, noiseGain, chordGain];
+
+        // Periodic ceramic cup clinks
+        const triggerClink = () => {
+          if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') return;
+          try {
+            const osc = ctx.createOscillator();
+            const gainNode = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(Math.random() * 1000 + 1500, ctx.currentTime);
+            
+            gainNode.gain.setValueAtTime(0.012, ctx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.18);
+            
+            osc.connect(gainNode);
+            gainNode.connect(ctx.destination);
+            
+            osc.start();
+            osc.stop(ctx.currentTime + 0.2);
+          } catch {}
+
+          const nextInterval = Math.random() * 4000 + 1500; // cup clinks every 1.5 - 5.5s
+          const timerId = setTimeout(triggerClink, nextInterval);
+          audioTimersRef.current.push(timerId);
+        };
+        triggerClink();
+      } else if (type === 'heavy_rain') {
+        // Rain noise
+        const bufferSize = ctx.sampleRate * 2;
+        const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        output.set(generateRainSamples(bufferSize));
+
+        const rainSource = ctx.createBufferSource();
+        rainSource.buffer = noiseBuffer;
+        rainSource.loop = true;
+
+        const rainFilter = ctx.createBiquadFilter();
+        rainFilter.type = 'lowpass';
+        rainFilter.frequency.setValueAtTime(650, ctx.currentTime);
+
+        const rainGain = ctx.createGain();
+        rainGain.gain.setValueAtTime(0.08, ctx.currentTime);
+
+        rainSource.connect(rainFilter);
+        rainFilter.connect(rainGain);
+        rainGain.connect(ctx.destination);
+
+        rainSource.start();
+
+        audioNodesRef.current = [rainSource, rainGain];
+
+        // Periodic thunder rolls
+        const triggerThunder = () => {
+          if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') return;
+          try {
+            const thunderOsc = ctx.createOscillator();
+            const thunderFilter = ctx.createBiquadFilter();
+            const thunderGain = ctx.createGain();
+
+            thunderOsc.type = 'sawtooth';
+            thunderOsc.frequency.setValueAtTime(45, ctx.currentTime);
+
+            thunderFilter.type = 'lowpass';
+            thunderFilter.frequency.setValueAtTime(65, ctx.currentTime);
+
+            thunderGain.gain.setValueAtTime(0.001, ctx.currentTime);
+            thunderGain.gain.linearRampToValueAtTime(0.09, ctx.currentTime + 1.2);
+            thunderGain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 6.0);
+            
+            thunderFilter.frequency.exponentialRampToValueAtTime(25, ctx.currentTime + 5.5);
+
+            thunderOsc.connect(thunderFilter);
+            thunderFilter.connect(thunderGain);
+            thunderGain.connect(ctx.destination);
+
+            thunderOsc.start();
+            thunderOsc.stop(ctx.currentTime + 6.5);
+          } catch {}
+
+          const nextInterval = Math.random() * 10000 + 8000; // thunder rolls every 8-18s
+          const timerId = setTimeout(triggerThunder, nextInterval);
+          audioTimersRef.current.push(timerId);
+        };
+        // wait 3 seconds before first thunder to make it ambient
+        const initialThunderId = setTimeout(triggerThunder, 3000);
+        audioTimersRef.current.push(initialThunderId);
       }
     } catch (e) {
       console.error('Audio synthesis failed:', e);
@@ -250,6 +524,14 @@ export default function CreatePostModal({ isOpen, onClose, currentUser }: Create
 
   const stopAudioPreview = () => {
     setIsPlayingPreview(false);
+    audioTimersRef.current.forEach(timer => {
+      try {
+        clearTimeout(timer);
+        clearInterval(timer);
+      } catch {}
+    });
+    audioTimersRef.current = [];
+    
     audioNodesRef.current.forEach(node => {
       try {
         node.stop();
@@ -887,6 +1169,10 @@ export default function CreatePostModal({ isOpen, onClose, currentUser }: Create
                 { id: 'neon_synth', title: 'Tokyo Synthwave Pulse' },
                 { id: 'rainy_jazz', title: 'Rainy Alleyway Jazz' },
                 { id: 'vapor_echo', title: 'Retro Vapor Echo' },
+                { id: 'campfire_wind', title: 'Cozy Campfire 🔥' },
+                { id: 'forest_brook', title: 'Forest Brook 🌿' },
+                { id: 'coffee_shop', title: 'Coffee Murmur ☕' },
+                { id: 'heavy_rain', title: 'Heavy Downpour 🌧️' },
               ].map((sound) => {
                 const isActive = audioUrl === sound.id;
                 return (
