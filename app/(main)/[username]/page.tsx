@@ -2,11 +2,12 @@
 
 import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Grid, Bookmark, BarChart3, Users, Image as ImageIcon, Heart, MessageSquare, ExternalLink, ShieldAlert, Sparkles, Loader2, RefreshCw } from 'lucide-react';
-import { getUserProfile, getCreatorAnalytics, toggleFollow, getCurrentUser, ProfileDetails, CreatorAnalytics } from '@/lib/actions';
-import { User as UserType } from '@/lib/db';
+import { Grid, Bookmark, BarChart3, Users, Image as ImageIcon, Heart, MessageSquare, ExternalLink, ShieldAlert, Sparkles, Loader2, RefreshCw, Archive, FolderHeart, Activity } from 'lucide-react';
+import { getUserProfile, getCreatorAnalytics, toggleFollow, getCurrentUser, ProfileDetails, CreatorAnalytics, getNarrativeVault } from '@/lib/actions';
+import { User as UserType, Story } from '@/lib/db';
 import { Dialog } from '@/components/ui/Dialog';
 import PostCard from '@/components/feed/PostCard';
+import StoryViewer from '@/components/stories/StoryViewer';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 
@@ -18,11 +19,15 @@ export default function ProfilePage() {
   const [currentUser, setCurrentUser] = React.useState<UserType | null>(null);
   const [profile, setProfile] = React.useState<ProfileDetails | null>(null);
   const [analytics, setAnalytics] = React.useState<CreatorAnalytics | null>(null);
+  const [vaultStories, setVaultStories] = React.useState<Story[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [followPending, setFollowPending] = React.useState(false);
 
-  // Active Tab: 'posts' | 'bookmarks' | 'analytics'
-  const [activeTab, setActiveTab] = React.useState<'posts' | 'bookmarks' | 'analytics'>('posts');
+  // Active Tab: 'posts' | 'bookmarks' | 'analytics' | 'vault'
+  const [activeTab, setActiveTab] = React.useState<'posts' | 'bookmarks' | 'analytics' | 'vault'>('posts');
+
+  // Story Viewer Modal trigger for highlight preview
+  const [activeHighlightIndex, setActiveHighlightIndex] = React.useState<number | null>(null);
 
   // Selected post detail dialog
   const [selectedPostId, setSelectedPostId] = React.useState<string | null>(null);
@@ -39,6 +44,9 @@ export default function ProfilePage() {
         // Fetch analytics
         const stats = await getCreatorAnalytics(data.user.id);
         setAnalytics(stats);
+        // Fetch narrative vault highlights
+        const vault = await getNarrativeVault(username);
+        setVaultStories(vault);
       } else {
         setProfile(null);
       }
@@ -272,6 +280,20 @@ export default function ProfilePage() {
           <BarChart3 className="w-4 h-4" />
           <span>Creator Insights</span>
         </button>
+
+        {/* Narrative Vault Highlights Tab (Feature 19) */}
+        <button
+          onClick={() => setActiveTab('vault')}
+          className={cn(
+            'flex items-center gap-2 py-2 text-xs font-bold uppercase tracking-wider border-b-2 cursor-pointer transition-all',
+            activeTab === 'vault'
+              ? 'border-violet-500 text-violet-400 shadow-[0_4px_10px_rgba(124,58,237,0.05)]'
+              : 'border-transparent text-slate-500 hover:text-slate-300'
+          )}
+        >
+          <Archive className="w-4 h-4" />
+          <span>Narrative Vault</span>
+        </button>
       </div>
 
       {/* 3. ACTIVE TAB CONTENT VIEW */}
@@ -457,6 +479,78 @@ export default function ProfilePage() {
             </div>
           </div>
         )}
+
+        {activeTab === 'vault' && (
+          vaultStories.length === 0 ? (
+            <div className="w-full py-16 text-center border border-dashed border-slate-900 rounded bg-slate-950/20 text-slate-600 flex flex-col items-center justify-center gap-2">
+              <Archive className="w-8 h-8 text-slate-800 animate-bounce" />
+              <span className="text-xs font-mono uppercase tracking-widest text-slate-500">Vault Highlights Empty</span>
+              <span className="text-[10px] text-slate-600 max-w-xs leading-relaxed">
+                Tag your live stories with **#hashtags** (e.g. #art, #code) during creation to auto-route them into permanent Narrative Vault categories on your profile!
+              </span>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-8">
+              {/* Introduction card */}
+              <div className="p-4 bg-slate-900/30 border border-slate-900 rounded flex gap-3.5 items-start">
+                <Activity className="w-5 h-5 text-teal-400 mt-0.5 flex-shrink-0 animate-pulse" />
+                <div className="flex flex-col gap-1 text-xs">
+                  <span className="font-bold text-slate-200">Programmatic Routing Engine</span>
+                  <span className="text-slate-500 font-light leading-relaxed">
+                    VividPulse automatically listens for hashtag patterns in expiring content. Once detected, the update packets are permanently moved and indexed in your local Narrative Vault workspace.
+                  </span>
+                </div>
+              </div>
+
+              {/* Grouped Folders list */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {Object.entries(
+                  vaultStories.reduce((groups: { [key: string]: { story: Story; originalIndex: number }[] }, story, idx) => {
+                    story.hashtags?.forEach(tag => {
+                      if (!groups[tag]) groups[tag] = [];
+                      groups[tag].push({ story, originalIndex: idx });
+                    });
+                    return groups;
+                  }, {})
+                ).map(([tag, items]) => (
+                  <div key={tag} className="p-5 bg-slate-950 border border-slate-900 rounded-lg flex flex-col gap-4 shadow-lg hover:border-teal-500/30 transition-all">
+                    <div className="flex items-center justify-between pb-2.5 border-b border-slate-900/60">
+                      <span className="text-xs font-mono font-bold text-teal-400 uppercase tracking-wider">📁 {tag} Category</span>
+                      <span className="text-[9px] font-mono text-slate-500">{items.length} archives saved</span>
+                    </div>
+
+                    {/* Horizontal preview of archived stories */}
+                    <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
+                      {items.map(({ story, originalIndex }) => (
+                        <div
+                          key={story.id}
+                          onClick={() => setActiveHighlightIndex(originalIndex)}
+                          className="relative w-16 h-24 rounded border border-slate-800 hover:border-teal-500 overflow-hidden flex-shrink-0 cursor-pointer group transition-all"
+                        >
+                          {/* Background gradient or image preview */}
+                          {story.mediaUrl.startsWith('GRADIENT:') ? (
+                            <div className={cn("absolute inset-0 flex items-center justify-center text-[18px]", 
+                              story.mediaUrl.replace('GRADIENT:', '') === 'neon-violet' ? 'bg-gradient-to-tr from-violet-950 to-slate-900' : 'bg-slate-900'
+                            )}>
+                              🧬
+                            </div>
+                          ) : (
+                            <img src={story.mediaUrl} alt="Archive" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                          )}
+                          <div className="absolute inset-0 bg-black/40 flex items-end justify-center p-1">
+                            <span className="text-[7px] font-mono font-bold text-slate-300 group-hover:text-white truncate">
+                              {story.mediaType}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        )}
       </div>
 
       {/* DETAILED HYDRATED POST POPUP DIALOG */}
@@ -475,6 +569,21 @@ export default function ProfilePage() {
           />
         )}
       </Dialog>
+
+      {/* NARRATIVE VAULT HIGHLIGHT IMMERSIVE STORY VIEWER */}
+      {activeHighlightIndex !== null && vaultStories.length > 0 && (
+        <StoryViewer
+          trays={[{
+            userId: user.id,
+            username: user.username,
+            avatarUrl: user.avatarUrl,
+            stories: [vaultStories[activeHighlightIndex]]
+          }]}
+          initialUserIndex={0}
+          isOpen={activeHighlightIndex !== null}
+          onClose={() => setActiveHighlightIndex(null)}
+        />
+      )}
 
     </div>
   );

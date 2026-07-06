@@ -348,7 +348,27 @@ export async function getActiveStories(): Promise<ActiveStoryTray[]> {
   return trays;
 }
 
-export async function createStory(mediaUrl: string, mediaType: 'IMAGE' | 'VIDEO' = 'IMAGE') {
+export async function createStory(
+  mediaUrl: string,
+  mediaType: 'IMAGE' | 'VIDEO' | 'AUDIO_WAVEFORM' | 'TEXT' = 'IMAGE',
+  meta?: {
+    qaQuestion?: string;
+    chainedStoryId?: string;
+    chainName?: string;
+    audioDataUrl?: string;
+    waveformPoints?: number[];
+    latitude?: number;
+    longitude?: number;
+    isGated?: boolean;
+    pollQuestion?: string;
+    pollMinLabel?: string;
+    pollMaxLabel?: string;
+    codeSnippet?: string;
+    codeLanguage?: string;
+    hasAnonymousTerminal?: boolean;
+    hashtags?: string[];
+  }
+) {
   const currentUser = await getCurrentUser();
   if (!currentUser) return { success: false, error: 'Unauthorized.' };
 
@@ -360,12 +380,115 @@ export async function createStory(mediaUrl: string, mediaType: 'IMAGE' | 'VIDEO'
     mediaType,
     createdAt: new Date().toISOString(),
     expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
+    ...meta,
+    qaAnswers: meta?.qaQuestion ? [] : undefined,
+    pollVotes: meta?.pollQuestion ? [] : undefined,
+    anonymousAnswers: meta?.hasAnonymousTerminal ? [] : undefined,
   };
 
   db.stories.push(newStory);
   await saveDB(db);
 
   return { success: true, story: newStory };
+}
+
+export async function submitStoryQAAnswer(storyId: string, answerText: string) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Unauthorized.' };
+
+  const db = await getDB();
+  const story = db.stories.find(s => s.id === storyId);
+  if (!story) return { success: false, error: 'Story not found.' };
+
+  if (!story.qaAnswers) {
+    story.qaAnswers = [];
+  }
+
+  story.qaAnswers.push({
+    id: generateUUID(),
+    username: currentUser.username,
+    text: answerText.trim(),
+    createdAt: new Date().toISOString(),
+  });
+
+  await saveDB(db);
+  return { success: true, story };
+}
+
+export async function submitStoryPollVote(storyId: string, score: number) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Unauthorized.' };
+
+  const db = await getDB();
+  const story = db.stories.find(s => s.id === storyId);
+  if (!story) return { success: false, error: 'Story not found.' };
+
+  if (!story.pollVotes) {
+    story.pollVotes = [];
+  }
+
+  const existingIndex = story.pollVotes.findIndex(v => v.username === currentUser.username);
+  if (existingIndex !== -1) {
+    story.pollVotes[existingIndex].score = score;
+  } else {
+    story.pollVotes.push({
+      username: currentUser.username,
+      score,
+    });
+  }
+
+  await saveDB(db);
+  return { success: true, story };
+}
+
+export async function submitStoryAnonymousAnswer(storyId: string, text: string) {
+  const db = await getDB();
+  const story = db.stories.find(s => s.id === storyId);
+  if (!story) return { success: false, error: 'Story not found.' };
+
+  if (!story.anonymousAnswers) {
+    story.anonymousAnswers = [];
+  }
+
+  story.anonymousAnswers.push({
+    id: generateUUID(),
+    text: text.trim(),
+    createdAt: new Date().toISOString(),
+  });
+
+  await saveDB(db);
+  return { success: true, story };
+}
+
+export async function getNarrativeVault(username: string) {
+  const db = await getDB();
+  const user = db.users.find(u => u.username === username);
+  if (!user) return [];
+
+  return db.stories
+    .filter(s => s.userId === user.id && s.hashtags && s.hashtags.length > 0)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
+export async function checkEngagementGated(creatorId: string): Promise<boolean> {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return false;
+  if (currentUser.id === creatorId) return true;
+
+  const db = await getDB();
+  const creatorPostIds = db.posts.filter(p => p.userId === creatorId).map(p => p.id);
+  if (creatorPostIds.length === 0) return false;
+
+  const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+  
+  const hasLiked = db.postLikes.some(l => creatorPostIds.includes(l.postId) && l.userId === currentUser.id);
+  const hasCommented = db.comments.some(c => 
+    creatorPostIds.includes(c.postId) && 
+    c.userId === currentUser.id && 
+    c.createdAt > fortyEightHoursAgo
+  );
+
+  return hasLiked || hasCommented;
 }
 
 

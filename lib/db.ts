@@ -43,9 +43,36 @@ export interface Story {
   id: string;
   userId: string;
   mediaUrl: string;
-  mediaType: 'IMAGE' | 'VIDEO';
+  mediaType: 'IMAGE' | 'VIDEO' | 'AUDIO_WAVEFORM' | 'TEXT';
   expiresAt: string;
   createdAt: string;
+  // Feature 11: Time-Decay Interactive Q&As
+  qaQuestion?: string;
+  qaAnswers?: { id: string; username: string; text: string; createdAt: string }[];
+  // Feature 12: Pulse Chains
+  chainedStoryId?: string;
+  chainName?: string;
+  // Feature 13: Audio Waveform Pulses
+  audioDataUrl?: string;
+  waveformPoints?: number[];
+  // Feature 14: Coordinate Node Rings
+  latitude?: number;
+  longitude?: number;
+  // Feature 15: Engagement Gated Visibility
+  isGated?: boolean;
+  // Feature 16: Ambient Micro-Poll Sliders
+  pollQuestion?: string;
+  pollMinLabel?: string;
+  pollMaxLabel?: string;
+  pollVotes?: { username: string; score: number }[];
+  // Feature 17: Syntax Code Pulses
+  codeSnippet?: string;
+  codeLanguage?: string;
+  // Feature 18: Anonymous Query Terminals
+  hasAnonymousTerminal?: boolean;
+  anonymousAnswers?: { id: string; text: string; createdAt: string }[];
+  // Feature 19: Narrative Vault Hashtag Routing
+  hashtags?: string[];
 }
 
 export interface PostLike {
