@@ -44,6 +44,9 @@ interface ImageEditState {
   textSize: string;
   textPlacement: 'top' | 'center' | 'bottom';
   anchors: FocalAnchor[];
+  brightness?: number;
+  contrast?: number;
+  vignette?: number;
 }
 
 export default function CreatePostModal({ isOpen, onClose, currentUser }: CreatePostModalProps) {
@@ -67,6 +70,9 @@ export default function CreatePostModal({ isOpen, onClose, currentUser }: Create
   const [textColor, setTextColor] = React.useState('#ffffff');
   const [textSize, setTextSize] = React.useState('24px');
   const [textPlacement, setTextPlacement] = React.useState<'top' | 'center' | 'bottom'>('bottom');
+  const [exposure, setExposure] = React.useState(100);
+  const [contrast, setContrast] = React.useState(100);
+  const [vignette, setVignette] = React.useState(0);
   
   // 4. FOCAL ANCHORS STATE
   const [anchors, setAnchors] = React.useState<FocalAnchor[]>([]);
@@ -91,7 +97,7 @@ export default function CreatePostModal({ isOpen, onClose, currentUser }: Create
   const [coAuthorStatuses, setCoAuthorStatuses] = React.useState<Record<string, string>>({});
 
   // 10. GEOMETRIC LAYOUT STATE
-  const [layoutMatrix, setLayoutMatrix] = React.useState<'normal' | 'asymmetric-split' | 'triptych'>('normal');
+  const [layoutMatrix, setLayoutMatrix] = React.useState<'normal' | 'asymmetric-split' | 'triptych' | 'bento-grid' | 'quad-split' | 'panoramic-film'>('normal');
 
   // Sync co-author statuses mock timing
   React.useEffect(() => {
@@ -318,7 +324,10 @@ export default function CreatePostModal({ isOpen, onClose, currentUser }: Create
             textColor: '#ffffff',
             textSize: '24px',
             textPlacement: 'bottom',
-            anchors: []
+            anchors: [],
+            brightness: 100,
+            contrast: 100,
+            vignette: 0
           };
         }
       });
@@ -350,7 +359,10 @@ export default function CreatePostModal({ isOpen, onClose, currentUser }: Create
           textColor: '#ffffff',
           textSize: '24px',
           textPlacement: 'bottom',
-          anchors: []
+          anchors: [],
+          brightness: 100,
+          contrast: 100,
+          vignette: 0
         };
       }
     });
@@ -368,6 +380,9 @@ export default function CreatePostModal({ isOpen, onClose, currentUser }: Create
       setTextSize(state.textSize);
       setTextPlacement(state.textPlacement);
       setAnchors(state.anchors);
+      setExposure(state.brightness ?? 100);
+      setContrast(state.contrast ?? 100);
+      setVignette(state.vignette ?? 0);
     } else {
       setActiveFilter('none');
       setTextOverlay('');
@@ -375,6 +390,9 @@ export default function CreatePostModal({ isOpen, onClose, currentUser }: Create
       setTextSize('24px');
       setTextPlacement('bottom');
       setAnchors([]);
+      setExposure(100);
+      setContrast(100);
+      setVignette(0);
     }
     setTempAnchorPos(null);
     setNewAnchorLabel('');
@@ -401,8 +419,10 @@ export default function CreatePostModal({ isOpen, onClose, currentUser }: Create
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Draw base image
+    // Draw base image with brightness and contrast adjustments built-in
+    ctx.filter = `brightness(${exposure}%) contrast(${contrast}%)`;
     ctx.drawImage(img, 0, 0);
+    ctx.filter = 'none'; // reset filter
 
     // Apply filter context effects manually so it is backed in the pixel buffer
     if (activeFilter === 'noir') {
@@ -452,6 +472,83 @@ export default function CreatePostModal({ isOpen, onClose, currentUser }: Create
         data[i+2] = data[i+2] * 0.7; // Cold dim
       }
       ctx.putImageData(imgData, 0, 0);
+    } else if (activeFilter === 'vaporwave') {
+      // Chromatic shift & retro scanlines
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imgData.data;
+      const width = canvas.width;
+      const height = canvas.height;
+      const copy = new Uint8ClampedArray(data);
+      const offset = Math.max(4, Math.floor(width * 0.012));
+      
+      for (let y = 0; y < height; y++) {
+        const rowOffset = y * width * 4;
+        const isScanline = y % 4 === 0;
+        
+        for (let x = 0; x < width; x++) {
+          const idx = rowOffset + x * 4;
+          
+          let rIdx = idx - offset * 4;
+          if (rIdx < rowOffset) rIdx = rowOffset;
+          
+          let bIdx = idx + offset * 4;
+          const nextRowOffset = rowOffset + width * 4;
+          if (bIdx >= nextRowOffset) bIdx = nextRowOffset - 4;
+          
+          let r = copy[rIdx];
+          let g = copy[idx + 1];
+          let b = copy[bIdx];
+          
+          r = Math.min(255, r * 1.1 + 15);
+          g = g * 0.8;
+          b = Math.min(255, b * 1.25 + 25);
+          
+          if (isScanline) {
+            r *= 0.84;
+            g *= 0.84;
+            b *= 0.84;
+          }
+          
+          data[idx] = r;
+          data[idx + 1] = g;
+          data[idx + 2] = b;
+        }
+      }
+      ctx.putImageData(imgData, 0, 0);
+    } else if (activeFilter === 'dreamy') {
+      // Warm golden grading + soft center gradient glow
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imgData.data;
+      for (let i = 0; i < data.length; i += 4) {
+        data[i] = Math.min(255, data[i] * 1.15 + 15);
+        data[i+1] = Math.min(255, data[i+1] * 1.05 + 10);
+        data[i+2] = data[i+2] * 0.85;
+      }
+      ctx.putImageData(imgData, 0, 0);
+      
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+      const r = Math.min(cx, cy) * 0.85;
+      const mistGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+      mistGrad.addColorStop(0, 'rgba(255, 225, 180, 0.15)');
+      mistGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = mistGrad;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // Apply Vignette Overlay
+    if (vignette > 0) {
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+      const r = Math.sqrt(cx * cx + cy * cy);
+      const gradient = ctx.createRadialGradient(cx, cy, r * 0.45, cx, cy, r);
+      const opacity = (vignette / 100) * 0.85;
+      gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+      gradient.addColorStop(0.8, `rgba(0, 0, 0, ${opacity * 0.5})`);
+      gradient.addColorStop(1, `rgba(0, 0, 0, ${opacity})`);
+      
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
 
     // Add translucent noise texture for cinematic vibe
@@ -497,7 +594,10 @@ export default function CreatePostModal({ isOpen, onClose, currentUser }: Create
         textColor,
         textSize,
         textPlacement,
-        anchors: anchors
+        anchors: anchors,
+        brightness: exposure,
+        contrast: contrast,
+        vignette: vignette
       }
     }));
 
@@ -676,8 +776,17 @@ export default function CreatePostModal({ isOpen, onClose, currentUser }: Create
                   >
                     <option value="normal" className="bg-slate-950 text-slate-300">Default Slider</option>
                     <option value="asymmetric-split" className="bg-slate-950 text-slate-300">Asymmetric Split (60/40)</option>
+                    {mediaUrls.length >= 2 && (
+                      <option value="panoramic-film" className="bg-slate-950 text-slate-300">Panoramic Filmstrip (2 Panels)</option>
+                    )}
                     {mediaUrls.length >= 3 && (
-                      <option value="triptych" className="bg-slate-950 text-slate-300">Triptych Grid (3 Panels)</option>
+                      <>
+                        <option value="triptych" className="bg-slate-950 text-slate-300">Triptych Grid (3 Panels)</option>
+                        <option value="bento-grid" className="bg-slate-950 text-slate-300">Bento Grid (3-4 Panels)</option>
+                      </>
+                    )}
+                    {mediaUrls.length >= 4 && (
+                      <option value="quad-split" className="bg-slate-950 text-slate-300">Quad Split Grid (4 Panels)</option>
                     )}
                   </select>
                 </div>
@@ -992,12 +1101,25 @@ export default function CreatePostModal({ isOpen, onClose, currentUser }: Create
                     alt="Canvas Source"
                     className="max-h-full max-w-full object-contain select-none pointer-events-none"
                     style={{
-                      filter: activeFilter === 'noir' ? 'contrast(1.3) brightness(0.9) grayscale(0.5) sepia(0.1) hue-rotate(190deg)' : 
-                              activeFilter === 'cyber' ? 'hue-rotate(270deg) saturate(1.4) contrast(1.1)' :
-                              activeFilter === 'matrix' ? 'hue-rotate(90deg) saturate(1.5) contrast(1.2)' : 
-                              activeFilter === 'amber' ? 'sepia(0.6) saturate(1.2) hue-rotate(340deg) brightness(0.95)' : 'none'
+                      filter: (activeFilter === 'noir' ? 'contrast(1.3) brightness(0.9) grayscale(0.5) sepia(0.1) hue-rotate(190deg) ' : 
+                              activeFilter === 'cyber' ? 'hue-rotate(270deg) saturate(1.4) contrast(1.1) ' :
+                              activeFilter === 'matrix' ? 'hue-rotate(90deg) saturate(1.5) contrast(1.2) ' : 
+                              activeFilter === 'amber' ? 'sepia(0.6) saturate(1.2) hue-rotate(340deg) brightness(0.95) ' : 
+                              activeFilter === 'vaporwave' ? 'hue-rotate(270deg) saturate(1.2) contrast(1.2) ' :
+                              activeFilter === 'dreamy' ? 'sepia(0.2) saturate(1.1) brightness(1.05) ' : '') + 
+                              `brightness(${exposure}%) contrast(${contrast}%)`
                     }}
                   />
+
+                  {/* Real-time Vignette preview overlay */}
+                  {vignette > 0 && (
+                    <div 
+                      className="absolute inset-0 pointer-events-none transition-all duration-75"
+                      style={{
+                        background: `radial-gradient(circle, rgba(0,0,0,0) 40%, rgba(0,0,0,${(vignette / 100) * 0.45}) 80%, rgba(0,0,0,${(vignette / 100) * 0.85}) 100%)`
+                      }}
+                    />
+                  )}
 
                   {/* Render existing anchors visually */}
                   {anchors.map((anchor, idx) => (
@@ -1121,20 +1243,22 @@ export default function CreatePostModal({ isOpen, onClose, currentUser }: Create
               <Sparkles className="w-3.5 h-3.5 text-violet-500" />
               1. Stack Translucent CSS Filter Shader
             </label>
-            <div className="grid grid-cols-5 gap-2">
+            <div className="grid grid-cols-4 md:grid-cols-7 gap-2">
               {[
                 { id: 'none', name: 'Original', color: 'from-slate-800 to-slate-900' },
                 { id: 'noir', name: 'Noir Shadow', color: 'from-slate-950 to-slate-800' },
                 { id: 'cyber', name: 'Cyber Neon', color: 'from-fuchsia-950/40 to-slate-950' },
                 { id: 'matrix', name: 'Emerald Grids', color: 'from-emerald-950/40 to-slate-950' },
                 { id: 'amber', name: 'Amber Film', color: 'from-amber-950/40 to-slate-950' },
+                { id: 'vaporwave', name: 'Vapor Glitch', color: 'from-pink-950/40 to-slate-950' },
+                { id: 'dreamy', name: 'Dreamy Mist', color: 'from-yellow-950/30 to-slate-950' },
               ].map((filter) => (
                 <button
                   key={filter.id}
                   type="button"
                   onClick={() => setActiveFilter(filter.id)}
                   className={cn(
-                    'px-2 py-2 border rounded text-center text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer bg-gradient-to-br',
+                    'px-2 py-2 border rounded text-center text-[9px] font-bold uppercase tracking-wider transition-all cursor-pointer bg-gradient-to-br',
                     filter.color,
                     activeFilter === filter.id 
                       ? 'border-violet-500 text-violet-300 shadow-[0_0_10px_rgba(124,58,237,0.15)]' 
@@ -1144,6 +1268,63 @@ export default function CreatePostModal({ isOpen, onClose, currentUser }: Create
                   {filter.name}
                 </button>
               ))}
+            </div>
+          </div>
+
+          {/* Real-time Adjustment Sliders */}
+          <div className="flex flex-col gap-2.5 p-3.5 bg-slate-900/40 border border-slate-900 rounded">
+            <label className="text-xs font-bold text-slate-400 tracking-wider uppercase flex items-center gap-1.5">
+              <Sliders className="w-3.5 h-3.5 text-violet-500" />
+              2. Real-Time Photo Enhancements
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-1">
+              {/* Exposure Slider */}
+              <div className="flex flex-col gap-1.5">
+                <div className="flex justify-between items-center text-[10px] font-mono text-slate-400">
+                  <span>Exposure</span>
+                  <span className="text-teal-400 font-bold">{exposure}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="50"
+                  max="150"
+                  value={exposure}
+                  onChange={(e) => setExposure(parseInt(e.target.value))}
+                  className="w-full accent-violet-500 bg-slate-950 h-1.5 rounded cursor-pointer"
+                />
+              </div>
+
+              {/* Contrast Slider */}
+              <div className="flex flex-col gap-1.5">
+                <div className="flex justify-between items-center text-[10px] font-mono text-slate-400">
+                  <span>Contrast</span>
+                  <span className="text-teal-400 font-bold">{contrast}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="50"
+                  max="150"
+                  value={contrast}
+                  onChange={(e) => setContrast(parseInt(e.target.value))}
+                  className="w-full accent-violet-500 bg-slate-950 h-1.5 rounded cursor-pointer"
+                />
+              </div>
+
+              {/* Vignette Slider */}
+              <div className="flex flex-col gap-1.5">
+                <div className="flex justify-between items-center text-[10px] font-mono text-slate-400">
+                  <span>Cinematic Vignette</span>
+                  <span className="text-teal-400 font-bold">{vignette}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={vignette}
+                  onChange={(e) => setVignette(parseInt(e.target.value))}
+                  className="w-full accent-violet-500 bg-slate-950 h-1.5 rounded cursor-pointer"
+                />
+              </div>
             </div>
           </div>
 

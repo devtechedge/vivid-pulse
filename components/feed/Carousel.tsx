@@ -242,11 +242,149 @@ export default function Carousel({
       );
     }
 
+    if (layoutMatrix === 'bento-grid' && media.length >= 3) {
+      const isFour = media.length >= 4;
+      if (isFour) {
+        return (
+          <div className="w-full h-full grid grid-cols-6 grid-rows-2 gap-1 bg-black p-0.5">
+            {/* First main featured tall box */}
+            <div className="col-span-3 row-span-2 relative overflow-hidden group/stitch">
+              <img 
+                src={media[0].url} 
+                alt="Bento 1" 
+                className="w-full h-full object-cover select-none pointer-events-none hover:scale-102 transition-transform duration-300" 
+              />
+              <span className="absolute bottom-2 left-2 px-1.5 py-0.5 bg-black/70 border border-slate-800/40 text-[8px] font-mono text-teal-400 rounded">
+                CH #1 [FEATURED]
+              </span>
+            </div>
+            {/* Second and third stacked on top-right */}
+            <div className="col-span-3 row-span-1 grid grid-cols-2 gap-1">
+              <div className="relative overflow-hidden group/stitch w-full h-full">
+                <img 
+                  src={media[1].url} 
+                  alt="Bento 2" 
+                  className="w-full h-full object-cover select-none pointer-events-none hover:scale-102 transition-transform duration-300" 
+                />
+                <span className="absolute bottom-2 left-2 px-1.5 py-0.5 bg-black/70 border border-slate-800/40 text-[8px] font-mono text-teal-400 rounded">
+                  CH #2
+                </span>
+              </div>
+              <div className="relative overflow-hidden group/stitch w-full h-full">
+                <img 
+                  src={media[2].url} 
+                  alt="Bento 3" 
+                  className="w-full h-full object-cover select-none pointer-events-none hover:scale-102 transition-transform duration-300" 
+                />
+                <span className="absolute bottom-2 left-2 px-1.5 py-0.5 bg-black/70 border border-slate-800/40 text-[8px] font-mono text-teal-400 rounded">
+                  CH #3
+                </span>
+              </div>
+            </div>
+            {/* Fourth wide block on bottom-right */}
+            <div className="col-span-3 row-span-1 relative overflow-hidden group/stitch">
+              <img 
+                src={media[3].url} 
+                alt="Bento 4" 
+                className="w-full h-full object-cover select-none pointer-events-none hover:scale-102 transition-transform duration-300" 
+              />
+              <span className="absolute bottom-2 left-2 px-1.5 py-0.5 bg-black/70 border border-slate-800/40 text-[8px] font-mono text-teal-400 rounded">
+                CH #4
+              </span>
+            </div>
+          </div>
+        );
+      } else {
+        return (
+          <div className="w-full h-full grid grid-cols-5 grid-rows-2 gap-1 bg-black p-0.5">
+            {/* Left Featured tall box */}
+            <div className="col-span-3 row-span-2 relative overflow-hidden group/stitch">
+              <img 
+                src={media[0].url} 
+                alt="Bento Main" 
+                className="w-full h-full object-cover select-none pointer-events-none hover:scale-102 transition-transform duration-300" 
+              />
+              <span className="absolute bottom-2 left-2 px-1.5 py-0.5 bg-black/70 border border-slate-800/40 text-[8px] font-mono text-teal-400 rounded">
+                CH #1 [FEATURED]
+              </span>
+            </div>
+            {/* Top Right box */}
+            <div className="col-span-2 row-span-1 relative overflow-hidden group/stitch">
+              <img 
+                src={media[1].url} 
+                alt="Bento Secondary" 
+                className="w-full h-full object-cover select-none pointer-events-none hover:scale-102 transition-transform duration-300" 
+              />
+              <span className="absolute bottom-2 left-2 px-1.5 py-0.5 bg-black/70 border border-slate-800/40 text-[8px] font-mono text-teal-400 rounded">
+                CH #2
+              </span>
+            </div>
+            {/* Bottom Right box */}
+            <div className="col-span-2 row-span-1 relative overflow-hidden group/stitch">
+              <img 
+                src={media[2].url} 
+                alt="Bento Tertiary" 
+                className="w-full h-full object-cover select-none pointer-events-none hover:scale-102 transition-transform duration-300" 
+              />
+              <span className="absolute bottom-2 left-2 px-1.5 py-0.5 bg-black/70 border border-slate-800/40 text-[8px] font-mono text-teal-400 rounded">
+                CH #3
+              </span>
+            </div>
+          </div>
+        );
+      }
+    }
+
+    if (layoutMatrix === 'quad-split' && media.length >= 4) {
+      return (
+        <div className="w-full h-full grid grid-cols-2 grid-rows-2 gap-1 bg-black p-0.5">
+          {media.slice(0, 4).map((item, idx) => (
+            <div key={item.id} className="relative overflow-hidden group/stitch">
+              <img 
+                src={item.url} 
+                alt={`Quad Split Panel ${idx + 1}`} 
+                className="w-full h-full object-cover select-none pointer-events-none hover:scale-102 transition-transform duration-300" 
+              />
+              <span className="absolute bottom-2 left-2 px-1.5 py-0.5 bg-black/70 border border-slate-800/40 text-[8px] font-mono text-teal-400 rounded">
+                CH #{idx + 1}
+              </span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    if (layoutMatrix === 'panoramic-film' && media.length >= 2) {
+      return (
+        <div className="w-full h-full flex flex-col gap-1.5 bg-black p-1.5 justify-center">
+          {media.slice(0, 2).map((item, idx) => (
+            <div key={item.id} className="relative h-[47%] overflow-hidden group/stitch border border-slate-900 rounded-sm">
+              <img 
+                src={item.url} 
+                alt={`Panoramic Film Panel ${idx + 1}`} 
+                className="w-full h-full object-cover select-none pointer-events-none hover:scale-102 transition-transform duration-300" 
+              />
+              <div className="absolute top-0 inset-x-0 h-1 bg-black" />
+              <div className="absolute bottom-0 inset-x-0 h-1 bg-black" />
+              <span className="absolute bottom-2 left-3 px-1.5 py-0.5 bg-black/85 border border-slate-800/40 text-[8px] font-mono text-amber-400 rounded">
+                ANAMORPHIC // CH #{idx + 1}
+              </span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
     return null;
   };
 
   // Determine whether we render the active standard slide, vector text slide, or layout stitch
-  const isStitchedLayoutActive = (layoutMatrix === 'asymmetric-split' && media.length >= 2) || (layoutMatrix === 'triptych' && media.length >= 3);
+  const isStitchedLayoutActive = 
+    (layoutMatrix === 'asymmetric-split' && media.length >= 2) || 
+    (layoutMatrix === 'triptych' && media.length >= 3) ||
+    (layoutMatrix === 'bento-grid' && media.length >= 3) ||
+    (layoutMatrix === 'quad-split' && media.length >= 4) ||
+    (layoutMatrix === 'panoramic-film' && media.length >= 2);
   const isCurrentSlideVectorBlog = showVectorPanel && currentIndex === media.length;
 
   return (
