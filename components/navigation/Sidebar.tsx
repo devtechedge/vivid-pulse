@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, Compass, MessageSquare, User, PlusSquare, LogOut } from 'lucide-react';
+import { Home, Compass, MessageSquare, User, PlusSquare, LogOut, Coffee } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { logoutUser, getCurrentUser } from '@/lib/actions';
 import { User as UserType } from '@/lib/db';
@@ -29,6 +29,7 @@ export default function Sidebar() {
 
   const navItems = [
     { label: 'Daily Posts', href: '/feed', icon: Home },
+    { label: 'Cozy Neighbors', href: '/neighbors', icon: Coffee },
     { label: 'Find Friends', href: '/discover', icon: Compass },
     { label: 'Chats', href: '/messages', icon: MessageSquare },
     { label: 'My Page', href: currentUser ? `/${currentUser.username}` : '#', icon: User, disabled: !currentUser },

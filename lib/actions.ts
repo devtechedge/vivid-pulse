@@ -1187,3 +1187,448 @@ export async function mockUploadImage(base64Data: string): Promise<string> {
   // or return the base64 itself (since next image handles standard base64/data URLs perfectly!)
   return base64Data;
 }
+
+// --- COZY NEIGHBORS & WARM COMMUNITY ACTIONS ---
+
+export async function getNeighbors() {
+  const db = await getDB();
+  const currentUser = await getCurrentUser();
+
+  // Initialize arrays if they don't exist yet
+  if (!db.neighborMoods) db.neighborMoods = [];
+  if (!db.neighborWaves) db.neighborWaves = [];
+
+  // Map users with mood information and waves
+  return db.users.map(user => {
+    const mood = db.neighborMoods?.find(m => m.userId === user.id) || {
+      vibeEmoji: '👋',
+      vibeLabel: 'Available for a chat'
+    };
+    
+    // Wave greeting counts to this user from current user or others
+    const totalNudgesReceived = db.neighborWaves?.filter(w => w.receiverId === user.id).length || 0;
+    const hasNudged = currentUser ? db.neighborWaves?.some(w => w.senderId === currentUser.id && w.receiverId === user.id) : false;
+
+    return {
+      id: user.id,
+      username: user.username,
+      displayName: user.displayName,
+      avatarUrl: user.avatarUrl,
+      bio: user.bio,
+      vibeEmoji: mood.vibeEmoji,
+      vibeLabel: mood.vibeLabel,
+      totalNudgesReceived,
+      hasNudged
+    };
+  });
+}
+
+export async function sendNeighborNudge(receiverId: string, nudgeType: string) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Please log in to send warm vibes!' };
+
+  if (currentUser.id === receiverId) {
+    return { success: false, error: 'You are already filled with cozy thoughts!' };
+  }
+
+  const db = await getDB();
+  if (!db.neighborWaves) db.neighborWaves = [];
+
+  // Register the new wave/hug/tea nudge
+  const newNudge = {
+    id: generateUUID(),
+    senderId: currentUser.id,
+    receiverId,
+    type: nudgeType,
+    createdAt: new Date().toISOString()
+  };
+
+  db.neighborWaves.push(newNudge);
+  await saveDB(db);
+
+  return { success: true, nudge: newNudge };
+}
+
+export async function updateNeighborMood(vibeEmoji: string, vibeLabel: string) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Unauthorized' };
+
+  const db = await getDB();
+  if (!db.neighborMoods) db.neighborMoods = [];
+
+  const existingMoodIdx = db.neighborMoods.findIndex(m => m.userId === currentUser.id);
+  const now = new Date().toISOString();
+
+  if (existingMoodIdx !== -1) {
+    db.neighborMoods[existingMoodIdx] = {
+      userId: currentUser.id,
+      vibeEmoji,
+      vibeLabel,
+      updatedAt: now
+    };
+  } else {
+    db.neighborMoods.push({
+      userId: currentUser.id,
+      vibeEmoji,
+      vibeLabel,
+      updatedAt: now
+    });
+  }
+
+  await saveDB(db);
+  return { success: true };
+}
+
+export async function getBulletins() {
+  const db = await getDB();
+  if (!db.neighborBulletins) db.neighborBulletins = [];
+
+  // Enriched with author details
+  const enriched = db.neighborBulletins.map(bulletin => {
+    const author = db.users.find(u => u.id === bulletin.userId) || {
+      username: 'neighbor',
+      displayName: 'Cozy Neighbor',
+      avatarUrl: null
+    };
+
+    return {
+      ...bulletin,
+      username: author.username,
+      displayName: author.displayName,
+      avatarUrl: author.avatarUrl
+    };
+  });
+
+  // Newest first
+  return enriched.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
+export async function createBulletin(content: string, color: string) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Please sign in to pin a sticky note.' };
+
+  const db = await getDB();
+  if (!db.neighborBulletins) db.neighborBulletins = [];
+
+  const newBulletin = {
+    id: generateUUID(),
+    userId: currentUser.id,
+    content,
+    color,
+    createdAt: new Date().toISOString()
+  };
+
+  db.neighborBulletins.push(newBulletin);
+  await saveDB(db);
+
+  return { success: true, bulletin: newBulletin };
+}
+
+export async function getCozyStrolls() {
+  const db = await getDB();
+  if (!db.cozyStrolls) db.cozyStrolls = [];
+
+  const enriched = db.cozyStrolls.map(stroll => {
+    const author = db.users.find(u => u.id === stroll.userId) || {
+      username: 'neighbor',
+      displayName: 'Cozy Neighbor',
+      avatarUrl: null
+    };
+
+    return {
+      ...stroll,
+      username: author.username,
+      displayName: author.displayName,
+      avatarUrl: author.avatarUrl
+    };
+  });
+
+  return enriched.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+}
+
+export async function createCozyStroll(title: string, time: string, location: string) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Please log in to schedule a stroll!' };
+
+  const db = await getDB();
+  if (!db.cozyStrolls) db.cozyStrolls = [];
+
+  const newStroll = {
+    id: generateUUID(),
+    userId: currentUser.id,
+    title,
+    time,
+    location,
+    attendees: [currentUser.username],
+    createdAt: new Date().toISOString()
+  };
+
+  db.cozyStrolls.push(newStroll);
+  await saveDB(db);
+
+  return { success: true, stroll: newStroll };
+}
+
+export async function joinCozyStroll(strollId: string) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Please log in to join!' };
+
+  const db = await getDB();
+  if (!db.cozyStrolls) db.cozyStrolls = [];
+
+  const stroll = db.cozyStrolls.find(s => s.id === strollId);
+  if (!stroll) return { success: false, error: 'Stroll not found' };
+
+  if (stroll.attendees.includes(currentUser.username)) {
+    // Leave stroll
+    stroll.attendees = stroll.attendees.filter(u => u !== currentUser.username);
+  } else {
+    // Join stroll
+    stroll.attendees.push(currentUser.username);
+  }
+
+  await saveDB(db);
+  return { success: true, attendees: stroll.attendees };
+}
+
+export async function getSkySnapshots() {
+  const db = await getDB();
+  if (!db.skySnapshots) db.skySnapshots = [];
+
+  const enriched = db.skySnapshots.map(sky => {
+    const author = db.users.find(u => u.id === sky.userId) || {
+      username: 'neighbor',
+      displayName: 'Cozy Neighbor',
+      avatarUrl: null
+    };
+
+    return {
+      ...sky,
+      username: author.username,
+      displayName: author.displayName,
+      avatarUrl: author.avatarUrl
+    };
+  });
+
+  return enriched.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
+export async function createSkySnapshot(imageUrl: string, description: string) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Please log in to share the sky!' };
+
+  const db = await getDB();
+  if (!db.skySnapshots) db.skySnapshots = [];
+
+  const newSky = {
+    id: generateUUID(),
+    userId: currentUser.id,
+    imageUrl,
+    description,
+    createdAt: new Date().toISOString()
+  };
+
+  db.skySnapshots.push(newSky);
+  await saveDB(db);
+
+  return { success: true, sky: newSky };
+}
+
+export async function getCookieJarTreats() {
+  const db = await getDB();
+  if (!db.cookieJarTreats) db.cookieJarTreats = [];
+
+  const enriched = db.cookieJarTreats.map(treat => {
+    const author = db.users.find(u => u.id === treat.userId) || {
+      username: 'neighbor',
+      displayName: 'Cozy Neighbor',
+      avatarUrl: null
+    };
+
+    return {
+      ...treat,
+      username: author.username,
+      displayName: author.displayName,
+      avatarUrl: author.avatarUrl
+    };
+  });
+
+  return enriched.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
+export async function createCookieJarTreat(title: string, description: string, totalPortions: number) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Please sign in to share a treat!' };
+
+  const db = await getDB();
+  if (!db.cookieJarTreats) db.cookieJarTreats = [];
+
+  const newTreat = {
+    id: generateUUID(),
+    userId: currentUser.id,
+    title,
+    description,
+    totalPortions,
+    claimedByUsernames: [],
+    createdAt: new Date().toISOString()
+  };
+
+  db.cookieJarTreats.push(newTreat);
+  await saveDB(db);
+
+  return { success: true, treat: newTreat };
+}
+
+export async function claimCookieJarTreat(treatId: string) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Please sign in to stop by!' };
+
+  const db = await getDB();
+  if (!db.cookieJarTreats) db.cookieJarTreats = [];
+
+  const treat = db.cookieJarTreats.find(t => t.id === treatId);
+  if (!treat) return { success: false, error: 'Treat not found' };
+
+  if (treat.claimedByUsernames.includes(currentUser.username)) {
+    return { success: false, error: 'You have already secured a slice of this treat!' };
+  }
+
+  if (treat.claimedByUsernames.length >= treat.totalPortions) {
+    return { success: false, error: 'Aww, all slices have already been enjoyed!' };
+  }
+
+  treat.claimedByUsernames.push(currentUser.username);
+  await saveDB(db);
+
+  return { success: true, claimedByUsernames: treat.claimedByUsernames };
+}
+
+export async function getWisdomReflections() {
+  const db = await getDB();
+  if (!db.wisdomReflections) db.wisdomReflections = [];
+
+  const enriched = db.wisdomReflections.map(wisdom => {
+    const author = db.users.find(u => u.id === wisdom.userId) || {
+      username: 'neighbor',
+      displayName: 'Cozy Neighbor',
+      avatarUrl: null
+    };
+
+    return {
+      ...wisdom,
+      username: author.username,
+      displayName: author.displayName,
+      avatarUrl: author.avatarUrl
+    };
+  });
+
+  return enriched.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
+export async function createWisdomReflection(prompt: string, text: string) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Please log in to share wisdom!' };
+
+  const db = await getDB();
+  if (!db.wisdomReflections) db.wisdomReflections = [];
+
+  const newWisdom = {
+    id: generateUUID(),
+    userId: currentUser.id,
+    prompt,
+    text,
+    createdAt: new Date().toISOString()
+  };
+
+  db.wisdomReflections.push(newWisdom);
+  await saveDB(db);
+
+  return { success: true, wisdom: newWisdom };
+}
+
+export async function getHelpingHandPosts() {
+  const db = await getDB();
+  if (!db.helpingHandPosts) db.helpingHandPosts = [];
+
+  const enriched = db.helpingHandPosts.map(post => {
+    const author = db.users.find(u => u.id === post.userId) || {
+      username: 'neighbor',
+      displayName: 'Cozy Neighbor',
+      avatarUrl: null
+    };
+
+    return {
+      ...post,
+      username: author.username,
+      displayName: author.displayName,
+      avatarUrl: author.avatarUrl
+    };
+  });
+
+  return enriched.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
+export async function createHelpingHandPost(title: string, description: string, type: 'need' | 'offer') {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Please log in to post!' };
+
+  const db = await getDB();
+  if (!db.helpingHandPosts) db.helpingHandPosts = [];
+
+  const newPost = {
+    id: generateUUID(),
+    userId: currentUser.id,
+    title,
+    description,
+    type,
+    createdAt: new Date().toISOString()
+  };
+
+  db.helpingHandPosts.push(newPost);
+  await saveDB(db);
+
+  return { success: true, post: newPost };
+}
+
+export async function getNeighborhoodSounds() {
+  const db = await getDB();
+  if (!db.neighborhoodSounds) db.neighborhoodSounds = [];
+
+  const enriched = db.neighborhoodSounds.map(sound => {
+    const author = db.users.find(u => u.id === sound.userId) || {
+      username: 'neighbor',
+      displayName: 'Cozy Neighbor',
+      avatarUrl: null
+    };
+
+    return {
+      ...sound,
+      username: author.username,
+      displayName: author.displayName,
+      avatarUrl: author.avatarUrl
+    };
+  });
+
+  return enriched.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
+export async function createNeighborhoodSound(title: string, audioDataUrl: string) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Please sign in to capture sounds.' };
+
+  const db = await getDB();
+  if (!db.neighborhoodSounds) db.neighborhoodSounds = [];
+
+  const newSound = {
+    id: generateUUID(),
+    userId: currentUser.id,
+    title,
+    audioDataUrl,
+    createdAt: new Date().toISOString()
+  };
+
+  db.neighborhoodSounds.push(newSound);
+  await saveDB(db);
+
+  return { success: true, sound: newSound };
+}

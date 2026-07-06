@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Compass, MessageSquare, User, PlusSquare } from 'lucide-react';
+import { Home, Compass, MessageSquare, User, PlusSquare, Coffee } from 'lucide-react';
 import { getCurrentUser } from '@/lib/actions';
 import { User as UserType } from '@/lib/db';
 import { cn } from '@/lib/utils';
@@ -45,6 +45,18 @@ export default function BottomBar() {
         >
           <Compass className="w-5 h-5" />
           <span className="text-[9px] font-semibold uppercase tracking-wider">Find Friends</span>
+        </Link>
+
+        {/* Neighbors Link */}
+        <Link
+          href="/neighbors"
+          className={cn(
+            'flex flex-col items-center justify-center gap-1 text-slate-400 p-1.5 rounded transition-all',
+            pathname === '/neighbors' ? 'text-violet-400' : 'hover:text-slate-200'
+          )}
+        >
+          <Coffee className="w-5 h-5" />
+          <span className="text-[9px] font-semibold uppercase tracking-wider">Neighbors</span>
         </Link>
 
         {/* Center create button */}

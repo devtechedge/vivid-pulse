@@ -131,6 +131,15 @@ export interface DatabaseState {
   bookmarks: Bookmark[];
   follows: Follow[];
   directMessages: DirectMessage[];
+  neighborWaves?: { id: string; senderId: string; receiverId: string; type: string; createdAt: string }[];
+  neighborMoods?: { userId: string; vibeEmoji: string; vibeLabel: string; updatedAt: string }[];
+  neighborBulletins?: { id: string; userId: string; content: string; color: string; createdAt: string }[];
+  cozyStrolls?: { id: string; userId: string; title: string; time: string; location: string; attendees: string[]; createdAt: string }[];
+  skySnapshots?: { id: string; userId: string; imageUrl: string; description: string; createdAt: string }[];
+  cookieJarTreats?: { id: string; userId: string; title: string; description: string; totalPortions: number; claimedByUsernames: string[]; createdAt: string }[];
+  wisdomReflections?: { id: string; userId: string; prompt: string; text: string; createdAt: string }[];
+  helpingHandPosts?: { id: string; userId: string; title: string; description: string; type: 'need' | 'offer'; createdAt: string }[];
+  neighborhoodSounds?: { id: string; userId: string; title: string; audioDataUrl?: string; createdAt: string }[];
 }
 
 // --- SECURE CRYPTOGRAPHY UTILITY (WEB CRYPTO) ---
@@ -377,6 +386,55 @@ const getInitialSeedData = async (): Promise<DatabaseState> => {
     { id: 'dm-5', senderId: 'user-1', receiverId: 'user-3', content: 'Send me your shader file, Marcus. I can audit the core fragment calculations for you!', mediaUrl: null, isRead: true, createdAt: new Date(Date.now() - 0.9 * 24 * 60 * 60 * 1000).toISOString() }
   ];
 
+  const neighborWaves = [
+    { id: 'wave-1', senderId: 'user-2', receiverId: 'user-1', type: 'wave', createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString() },
+    { id: 'wave-2', senderId: 'user-3', receiverId: 'user-1', type: 'tea', createdAt: new Date(Date.now() - 15 * 60 * 1000).toISOString() },
+  ];
+
+  const neighborMoods = [
+    { userId: 'user-1', vibeEmoji: '🎨', vibeLabel: 'Designing icons', updatedAt: new Date().toISOString() },
+    { userId: 'user-2', vibeEmoji: '📸', vibeLabel: 'Chasing rainy alleys', updatedAt: new Date().toISOString() },
+    { userId: 'user-3', vibeEmoji: '☕', vibeLabel: 'Drinking morning coffee', updatedAt: new Date().toISOString() },
+    { userId: 'user-4', vibeEmoji: '🚶‍♀️', vibeLabel: 'Out for a warm walk', updatedAt: new Date().toISOString() },
+    { userId: 'user-5', vibeEmoji: '🍪', vibeLabel: 'Baking sweet treats', updatedAt: new Date().toISOString() },
+  ];
+
+  const neighborBulletins = [
+    { id: 'bulletin-1', userId: 'user-2', content: 'Spotted a gorgeous fluffy grey cat near the main gate! Super friendly, wearing a purple collar with a bell. 🐈', color: 'yellow', createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString() },
+    { id: 'bulletin-2', userId: 'user-3', content: 'Sharing fresh organic rosemary and mint from my windowsill herb garden! Feel free to knock or message me for a small bundle. 🌿', color: 'green', createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() },
+    { id: 'bulletin-3', userId: 'user-4', content: 'Beautiful clear afternoon sky today! Highly recommend sitting on the park bench for a bit. ☀️', color: 'pink', createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString() },
+  ];
+
+  const cozyStrolls = [
+    { id: 'stroll-1', userId: 'user-3', title: 'Sunset Lake Path Stroll 🌅', time: '6:30 PM Today', location: 'Lake Courtyard Gate', attendees: ['cyber_pulse', 'alex_vivid'], createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString() },
+    { id: 'stroll-2', userId: 'user-4', title: 'Morning Dog Walk & Chats 🐾', time: '8:00 AM Tomorrow', location: 'Central Green Bench', attendees: ['neon_lens'], createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString() },
+  ];
+
+  const skySnapshots = [
+    { id: 'sky-1', userId: 'user-1', imageUrl: 'https://picsum.photos/seed/sky1/600/400', description: 'Pastel dream above the rooftop this morning. 🌸☁️', createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString() },
+    { id: 'sky-2', userId: 'user-2', imageUrl: 'https://picsum.photos/seed/sky2/600/400', description: 'Ominous but gorgeous neon cloud setup right before the rain! ⚡🌧️', createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() },
+  ];
+
+  const cookieJarTreats = [
+    { id: 'treat-1', userId: 'user-5', title: 'Fresh Warm Blueberry Muffins 🧁', description: 'Just pulled out of the oven! Super moist and sweet. Sharing with lovely neighbors.', totalPortions: 6, claimedByUsernames: ['alex_vivid', 'elena_pixels'], createdAt: new Date(Date.now() - 1.5 * 60 * 60 * 1000).toISOString() },
+    { id: 'treat-2', userId: 'user-1', title: 'Chilled Peach Iced Tea Jar 🍑🍹', description: 'Infused with real peaches and mint! Perfect for a warm afternoon.', totalPortions: 4, claimedByUsernames: [], createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString() },
+  ];
+
+  const wisdomReflections = [
+    { id: 'wisdom-1', userId: 'user-5', prompt: 'What is a small detail in nature that brings you pure joy?', text: 'Watching how young sparrows learn to splash around in puddle water after a rainy morning. It is a reminder that simple things can be the most rewarding.', createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString() },
+    { id: 'wisdom-2', userId: 'user-2', prompt: 'What is a piece of simple advice you would give to someone feeling stressed today?', text: 'Step outside without your phone for just five minutes. Look at the furthest visible horizon or tree line and breathe in deeply. The world is much larger than our screens.', createdAt: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString() },
+  ];
+
+  const helpingHandPosts: { id: string; userId: string; title: string; description: string; type: 'need' | 'offer'; createdAt: string }[] = [
+    { id: 'help-1', userId: 'user-1', title: 'Need a spare bicycle pump for 10 mins 🚲', description: 'Need to inflate my front tire before a quick evening ride. Can stop by to borrow and return it immediately!', type: 'need', createdAt: new Date(Date.now() - 1.5 * 60 * 60 * 1000).toISOString() },
+    { id: 'help-2', userId: 'user-3', title: 'Happy to help carry heavy boxes/groceries! 📦', description: 'If any neighbors need some extra muscle moving heavy things or carrying boxes up the stairs this weekend, let me know!', type: 'offer', createdAt: new Date(Date.now() - 10 * 60 * 1000).toISOString() },
+  ];
+
+  const neighborhoodSounds = [
+    { id: 'sound-1', userId: 'user-2', title: 'Raindrops on Tin Canopy 🌧️', audioDataUrl: 'simulated_rain', createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString() },
+    { id: 'sound-2', userId: 'user-3', title: 'Chirping courtyard swallows 🐦', audioDataUrl: 'simulated_birds', createdAt: new Date(Date.now() - 50 * 60 * 1000).toISOString() },
+  ];
+
   return {
     users,
     posts,
@@ -387,6 +445,15 @@ const getInitialSeedData = async (): Promise<DatabaseState> => {
     bookmarks,
     follows,
     directMessages,
+    neighborWaves,
+    neighborMoods,
+    neighborBulletins,
+    cozyStrolls,
+    skySnapshots,
+    cookieJarTreats,
+    wisdomReflections,
+    helpingHandPosts,
+    neighborhoodSounds,
   };
 };
 
