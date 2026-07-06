@@ -1,0 +1,6 @@
+{
+  "name": "VividPulse",
+  "description": "A high-fidelity visual media social networking platform featuring multi-media carousels, automated ephemeral stories, interactive nested replies, and serverless short-polling messages.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
