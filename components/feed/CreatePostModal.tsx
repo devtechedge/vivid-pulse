@@ -324,7 +324,7 @@ export default function CreatePostModal({ isOpen, onClose, currentUser }: Create
       });
       setImageEdits(updatedEdits);
     } catch (err) {
-      setError('Failed to ingest media stream.');
+      setError('Failed to load picture.');
     } finally {
       setIsUploading(false);
     }
@@ -560,7 +560,7 @@ export default function CreatePostModal({ isOpen, onClose, currentUser }: Create
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (mediaUrls.length === 0) {
-      setError('Please ingest at least one visual media layer.');
+      setError('Please add at least one picture.');
       return;
     }
 
@@ -630,10 +630,10 @@ export default function CreatePostModal({ isOpen, onClose, currentUser }: Create
         router.refresh();
         window.location.reload(); // Force full reload to rebuild state pipeline safely
       } else {
-        setError(res.error || 'Failed to submit media stream pipeline.');
+        setError(res.error || 'Failed to post. Please try again!');
       }
     } catch (err: any) {
-      setError(err?.message || 'Server-side ingestion timed out.');
+      setError(err?.message || 'Something took too long. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -647,7 +647,7 @@ export default function CreatePostModal({ isOpen, onClose, currentUser }: Create
           stopAudioPreview();
           onClose();
         }}
-        title="Ingest Media Stream Portfolio"
+        title="Share Something New with Friends"
         className="max-w-2xl"
       >
         <form onSubmit={handleFormSubmit} className="flex flex-col gap-6">
@@ -663,12 +663,12 @@ export default function CreatePostModal({ isOpen, onClose, currentUser }: Create
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-slate-400 tracking-wider uppercase flex items-center gap-1.5">
                 <Layers className="w-3.5 h-3.5 text-violet-500" />
-                Visual Channels
+                Your Pictures
               </label>
               {mediaUrls.length >= 2 && (
                 <div className="flex items-center gap-1.5 bg-slate-900/40 px-2.5 py-1 border border-slate-900 rounded">
                   <Layout className="w-3.5 h-3.5 text-teal-400" />
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Layout Stitches:</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Choose Layout:</span>
                   <select
                     value={layoutMatrix}
                     onChange={(e: any) => setLayoutMatrix(e.target.value)}
@@ -696,8 +696,8 @@ export default function CreatePostModal({ isOpen, onClose, currentUser }: Create
               />
               <div className="flex flex-col items-center justify-center gap-2 text-center pointer-events-none">
                 <ImageIcon className="w-8 h-8 text-slate-700 group-hover:text-violet-400 transition-all" />
-                <span className="text-xs font-semibold text-slate-300">Drag & Drop or Click to Add Image Layers</span>
-                <span className="text-[10px] font-medium text-slate-500">HTML5 Canvas Post-Processing Built-in</span>
+                <span className="text-xs font-semibold text-slate-300">Drag & Drop or Click to Add Pictures</span>
+                <span className="text-[10px] font-medium text-slate-500">We accept any standard photo from your device!</span>
               </div>
             </div>
 
@@ -705,7 +705,7 @@ export default function CreatePostModal({ isOpen, onClose, currentUser }: Create
             {isUploading && (
               <div className="flex items-center gap-2 text-xs font-semibold text-violet-400 py-1 px-2 bg-violet-950/20 rounded">
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                Processing stream channels...
+                Adding your pictures...
               </div>
             )}
 
@@ -952,12 +952,12 @@ export default function CreatePostModal({ isOpen, onClose, currentUser }: Create
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Publishing Pulse...
+                  Sharing now...
                 </>
               ) : (
                 <>
                   <Layers className="w-4 h-4" />
-                  Publish Pulse
+                  Share with Friends!
                 </>
               )}
             </Button>
@@ -969,7 +969,7 @@ export default function CreatePostModal({ isOpen, onClose, currentUser }: Create
       <Dialog
         isOpen={editingImageIndex !== null}
         onClose={() => setEditingImageIndex(null)}
-        title={`Edit Visual Layer Matrix (CH #${(editingImageIndex !== null ? editingImageIndex + 1 : '')})`}
+        title="Adjust Picture Options"
         className="max-w-2xl"
       >
         <div className="flex flex-col gap-5">

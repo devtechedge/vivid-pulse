@@ -765,15 +765,33 @@ export async function getDirectMessages(otherUserId: string): Promise<DirectMess
   return chatMessages.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 }
 
-export async function sendMessage(receiverId: string, content: string, mediaUrl: string | null = null) {
+export async function sendMessage(
+  receiverId: string, 
+  content: string, 
+  mediaUrl: string | null = null,
+  options?: {
+    isVolatile?: boolean;
+    destructionDelay?: number;
+    parentId?: string;
+    hasAudio?: boolean;
+    audioDuration?: number;
+    audioDataUrl?: string;
+    codeSnippet?: string;
+    codeLanguage?: string;
+  }
+) {
   const currentUser = await getCurrentUser();
   if (!currentUser) return { success: false, error: 'Unauthorized' };
 
-  if (!content.trim() && !mediaUrl) {
+  if (!content.trim() && !mediaUrl && !options?.audioDataUrl && !options?.codeSnippet) {
     return { success: false, error: 'Message cannot be empty.' };
   }
 
   const db = await getDB();
+  const expiresAt = options?.isVolatile && options?.destructionDelay 
+    ? new Date(Date.now() + options.destructionDelay * 1000).toISOString()
+    : undefined;
+
   const newMessage: DirectMessage = {
     id: generateUUID(),
     senderId: currentUser.id,
@@ -782,12 +800,183 @@ export async function sendMessage(receiverId: string, content: string, mediaUrl:
     mediaUrl,
     isRead: false,
     createdAt: new Date().toISOString(),
+    isVolatile: options?.isVolatile,
+    destructionDelay: options?.destructionDelay,
+    expiresAt,
+    parentId: options?.parentId,
+    hasAudio: options?.hasAudio,
+    audioDuration: options?.audioDuration,
+    audioDataUrl: options?.audioDataUrl,
+    codeSnippet: options?.codeSnippet,
+    codeLanguage: options?.codeLanguage,
   };
 
   db.directMessages.push(newMessage);
   await saveDB(db);
 
   return { success: true, message: newMessage };
+}
+
+export async function togglePinMessage(messageId: string) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Unauthorized' };
+
+  const db = await getDB();
+  const msg = db.directMessages.find(m => m.id === messageId);
+  if (!msg) return { success: false, error: 'Message not found.' };
+
+  msg.isPinned = !msg.isPinned;
+  await saveDB(db);
+
+  return { success: true, isPinned: msg.isPinned };
+}
+
+export async function deleteMessage(messageId: string) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Unauthorized' };
+
+  const db = await getDB();
+  const initialLen = db.directMessages.length;
+  db.directMessages = db.directMessages.filter(m => m.id !== messageId);
+  
+  if (db.directMessages.length !== initialLen) {
+    await saveDB(db);
+    return { success: true };
+  }
+  return { success: false, error: 'Message not found' };
+}
+
+export async function sendMultiRecipientBlast(
+  receiverIds: string[], 
+  content: string, 
+  options?: { codeSnippet?: string; codeLanguage?: string }
+) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Unauthorized' };
+
+  if (receiverIds.length === 0) return { success: false, error: 'No recipients specified.' };
+  if (receiverIds.length > 50) return { success: false, error: 'Cannot blast to more than 50 recipients concurrently.' };
+
+  const db = await getDB();
+  const sentMessages: DirectMessage[] = [];
+
+  for (const rId of receiverIds) {
+    const newMessage: DirectMessage = {
+      id: generateUUID(),
+      senderId: currentUser.id,
+      receiverId: rId,
+      content: content.trim(),
+      mediaUrl: null,
+      isRead: false,
+      createdAt: new Date().toISOString(),
+      codeSnippet: options?.codeSnippet,
+      codeLanguage: options?.codeLanguage,
+    };
+    db.directMessages.push(newMessage);
+    sentMessages.push(newMessage);
+  }
+
+  await saveDB(db);
+  return { success: true, count: sentMessages.length };
+}
+
+export interface LinkPreviewData {
+  url: string;
+  title: string;
+  description: string;
+  image?: string;
+  isCodeAsset?: boolean;
+  codeLanguage?: string;
+  codeSample?: string;
+}
+
+export async function resolveLinkPreview(url: string): Promise<LinkPreviewData> {
+  const normalizedUrl = url.trim().toLowerCase();
+  
+  let isCodeAsset = false;
+  let codeLanguage = 'javascript';
+  let codeSample = '';
+  let title = 'Web Resource Link';
+  let description = 'Unpacked secure payload snippet from the remote frame.';
+  let image = 'https://picsum.photos/seed/link_preview/400/250';
+
+  if (normalizedUrl.endsWith('.js') || (normalizedUrl.includes('github.com') && normalizedUrl.includes('.js'))) {
+    isCodeAsset = true;
+    codeLanguage = 'javascript';
+    title = 'Shinjuku Reflection Tracker Script';
+    description = 'Source script evaluating relative coordinate vectors in generative neon matrices.';
+    codeSample = `// Vector reflection formula
+function reflectVector(incident, normal) {
+  const dot = incident.x * normal.x + incident.y * normal.y;
+  return {
+    x: incident.x - 2 * dot * normal.x,
+    y: incident.y - 2 * dot * normal.y
+  };
+}
+console.log("Vector Reflect loaded!");`;
+  } else if (normalizedUrl.endsWith('.ts') || normalizedUrl.endsWith('.tsx') || normalizedUrl.includes('/schema') || normalizedUrl.includes('/actions')) {
+    isCodeAsset = true;
+    codeLanguage = 'typescript';
+    title = 'Database Connection Manager schema';
+    description = 'Standard Drizzle connection interface configuring Postgres storage.';
+    codeSample = `export interface DatabaseConfig {
+  host: string;
+  port: number;
+  secure: boolean;
+}
+export class SecureNodePool {
+  private activeConnections = 0;
+  constructor(private config: DatabaseConfig) {}
+  connect() { this.activeConnections++; }
+}`;
+  } else if (normalizedUrl.endsWith('.css') || normalizedUrl.includes('tailwind')) {
+    isCodeAsset = true;
+    codeLanguage = 'css';
+    title = 'Vaporwave Neon Theme stylesheet';
+    description = 'Custom global style specifications driving interactive color pulses.';
+    codeSample = `@keyframes neonPulse {
+  0%, 100% { filter: drop-shadow(0 0 2px #ec4899); }
+  50% { filter: drop-shadow(0 0 12px #a855f7); }
+}
+.neon-pulse {
+  animation: neonPulse 2s infinite ease-in-out;
+}`;
+  } else if (normalizedUrl.endsWith('.py')) {
+    isCodeAsset = true;
+    codeLanguage = 'python';
+    title = 'Spectral Analysis Matrix model';
+    description = 'Python script classifying visual feeds via deep learning weights.';
+    codeSample = `import numpy as np
+
+def extract_colors(image_path, num_clusters=5):
+    # Simulating K-means clustering on neon pixels
+    print(f"Clustering {image_path} coordinates...")
+    return np.random.rand(num_clusters, 3) * 255`;
+  } else if (normalizedUrl.includes('github.com')) {
+    title = 'GitHub Repository - neon-canvas-vivid';
+    description = 'Open-source web animations render loop built on dynamic canvas anchors.';
+    image = 'https://picsum.photos/seed/github/400/250';
+  } else if (normalizedUrl.includes('stackoverflow.com')) {
+    title = 'Stack Overflow: How to safely handle React context in concurrent rendering?';
+    description = 'Discussion on resolving state cascades and hooks in high-frequency short-poll networks.';
+  } else if (normalizedUrl.includes('figma.com')) {
+    title = 'Figma Design Board - VividPulse Web App';
+    description = 'Prototype layouts, color guidelines, and interactive high-contrast buttons.';
+  } else if (normalizedUrl.includes('picsum.photos') || normalizedUrl.includes('unsplash.com')) {
+    title = 'Rich Visual Media Stream Asset';
+    description = 'External high-definition media rendering inside conversation thread.';
+    image = url;
+  }
+
+  return {
+    url,
+    title,
+    description,
+    image,
+    isCodeAsset,
+    codeLanguage,
+    codeSample,
+  };
 }
 
 

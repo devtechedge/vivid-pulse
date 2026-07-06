@@ -612,13 +612,13 @@ export default function PostCard({ post, onRefresh }: PostCardProps) {
                 : 'bg-violet-600/15 hover:bg-violet-600/35 text-violet-300 hover:text-white border border-violet-500/20 shadow-[0_0_15px_rgba(124,58,237,0.1)]'
             )}
           >
-            {isFollowing ? 'Pulse Sync' : 'Sync User'}
+            {isFollowing ? 'Live Now' : 'Follow Friend'}
           </button>
         )}
 
         {isSelf && (
           <span className="text-[9px] font-bold tracking-wider uppercase bg-teal-950/40 border border-teal-900/60 text-teal-400 px-2 py-1 rounded-sm">
-            My Pulse
+            New Post
           </span>
         )}
       </div>
@@ -697,8 +697,8 @@ export default function PostCard({ post, onRefresh }: PostCardProps) {
           </button>
 
           {/* Quick instructions to long press */}
-          <span className="text-[8px] font-mono text-slate-600 uppercase tracking-wider hidden sm:inline">
-            Long-press media to trigger Pulse Reacts
+          <span className="text-[10px] font-sans text-slate-500 normal-case tracking-normal hidden sm:inline">
+            Tip: Press and hold on the photo to throw a burst of hearts!
           </span>
         </div>
 

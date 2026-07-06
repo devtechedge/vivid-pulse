@@ -363,8 +363,8 @@ export default function StoryViewer({ trays, initialUserIndex, isOpen, onClose }
         
         {/* Left Side Info Panel */}
         <div className="absolute top-6 left-6 text-slate-500 hidden md:flex flex-col gap-1 pointer-events-none">
-          <span className="text-xs font-bold uppercase tracking-widest text-slate-400">VIVIDPULSE STUDIO</span>
-          <span className="text-[10px] font-mono">Chamber view • Sync established</span>
+          <span className="text-xs font-bold uppercase tracking-widest text-slate-400">Our Story Hub</span>
+          <span className="text-[10px] font-sans text-slate-500">Daily Updates Screen • Connected</span>
           <span className="text-[10px] font-mono text-slate-600 mt-2">Spacebar: Play/Pause • Arrows: Navigate</span>
         </div>
 

@@ -1,6 +1,6 @@
 {
   "name": "VividPulse",
-  "description": "A high-fidelity visual media social networking platform featuring multi-media carousels, automated ephemeral stories, interactive nested replies, and serverless short-polling messages.",
+  "description": "A simple and friendly photo sharing website. Post pictures of your day, chat with family and friends, and see what is happening in an easy-to-use place.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

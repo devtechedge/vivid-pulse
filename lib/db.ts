@@ -107,6 +107,17 @@ export interface DirectMessage {
   mediaUrl: string | null;
   isRead: boolean;
   createdAt: string;
+  // Advanced Messaging Fields
+  isVolatile?: boolean;
+  expiresAt?: string;
+  destructionDelay?: number; // duration in seconds
+  parentId?: string; // for thread branching
+  isPinned?: boolean; // resource pinboard
+  hasAudio?: boolean; // voice memo logs
+  audioDuration?: number; // voice memo length
+  audioDataUrl?: string; // audio source base64/url
+  codeSnippet?: string; // executable sandbox code
+  codeLanguage?: string; // e.g. javascript, typescript, css, html
 }
 
 // Global state interface for server-side fallback storage

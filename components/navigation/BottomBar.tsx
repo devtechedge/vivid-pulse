@@ -32,7 +32,7 @@ export default function BottomBar() {
           )}
         >
           <Home className="w-5 h-5" />
-          <span className="text-[9px] font-semibold uppercase tracking-wider">Feed</span>
+          <span className="text-[9px] font-semibold uppercase tracking-wider">Daily Posts</span>
         </Link>
 
         {/* Discover Link */}
@@ -44,7 +44,7 @@ export default function BottomBar() {
           )}
         >
           <Compass className="w-5 h-5" />
-          <span className="text-[9px] font-semibold uppercase tracking-wider">Discover</span>
+          <span className="text-[9px] font-semibold uppercase tracking-wider">Find Friends</span>
         </Link>
 
         {/* Center create button */}
@@ -66,7 +66,7 @@ export default function BottomBar() {
           )}
         >
           <MessageSquare className="w-5 h-5" />
-          <span className="text-[9px] font-semibold uppercase tracking-wider">Messages</span>
+          <span className="text-[9px] font-semibold uppercase tracking-wider">Chats</span>
         </Link>
 
         {/* Profile Link */}
@@ -79,7 +79,7 @@ export default function BottomBar() {
             )}
           >
             <User className="w-5 h-5" />
-            <span className="text-[9px] font-semibold uppercase tracking-wider">Profile</span>
+            <span className="text-[9px] font-semibold uppercase tracking-wider">My Page</span>
           </Link>
         ) : (
           <div className="w-10" />

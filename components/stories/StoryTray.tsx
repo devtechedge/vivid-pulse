@@ -114,7 +114,7 @@ export default function StoryTray() {
       <div className="flex items-center justify-between border-b border-slate-900/60 pb-3">
         <div className="flex items-center gap-2">
           <Activity className="w-4 h-4 text-violet-500 animate-pulse" />
-          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">EPHEMERAL BROADCAST CORE</span>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">FRIENDS&apos; DAILY UPDATES</span>
         </div>
         
         {/* Toggle Controls */}
@@ -126,7 +126,7 @@ export default function StoryTray() {
               viewMode === 'timeline' ? "bg-violet-600 text-white shadow" : "text-slate-400 hover:text-white"
             )}
           >
-            Stream Feed
+            ✨ Today&apos;s Updates
           </button>
           <button
             onClick={() => setViewMode('radar')}
@@ -136,7 +136,7 @@ export default function StoryTray() {
             )}
           >
             <Compass className="w-3 h-3 animate-spin" style={{ animationDuration: '6s' }} />
-            Radar Node Rings
+            📍 See Who Is Nearby
           </button>
         </div>
       </div>
@@ -171,14 +171,14 @@ export default function StoryTray() {
 
           {/* LIVE STORIES TRAYS SCROLL */}
           {loading ? (
-            <div className="flex items-center gap-3 py-2.5 text-xs font-mono text-slate-600">
+            <div className="flex items-center gap-3 py-2.5 text-xs font-sans text-slate-600">
               <Loader2 className="w-4 h-4 animate-spin text-violet-500" />
-              Syncing Stories...
+              Loading updates...
             </div>
           ) : trays.length === 0 ? (
-            <div className="flex items-center gap-2 text-xs font-mono text-slate-600 py-3 px-1 border border-dashed border-slate-900/60 rounded flex-1">
+            <div className="flex items-center gap-2 text-xs font-sans text-slate-600 py-3 px-1 border border-dashed border-slate-900/60 rounded flex-1">
               <Sparkles className="w-3.5 h-3.5 text-teal-400" />
-              No Live Stories active. Be the first to start a Pulse.
+              No updates posted yet. Be the first to share your day!
             </div>
           ) : (
             trays.map((tray, index) => {
@@ -246,22 +246,22 @@ export default function StoryTray() {
 
           <div className="z-10 flex flex-col gap-3">
             <div className="flex items-center justify-between">
-              <span className="text-[9px] font-mono text-slate-400 flex items-center gap-1">
-                <Radio className="w-3 h-3 text-violet-500 animate-pulse" /> GRID COORDINATE DISTANCE MAPPING
+              <span className="text-[9px] font-sans text-slate-400 flex items-center gap-1">
+                <Radio className="w-3 h-3 text-violet-500 animate-pulse" /> Look who shared pictures near you!
               </span>
-              <span className="text-[8px] font-mono text-slate-500">Center: @me (35.6895, 139.6917)</span>
+              <span className="text-[8px] font-sans text-slate-500">Location: Around Me</span>
             </div>
 
             {/* NEON ORBITAL NODE RINGS */}
             <div className="flex flex-col gap-3.5">
               {/* RING 1: PROXIMAL CORE */}
               <div className="flex flex-col gap-2 p-2 bg-slate-900/20 border border-violet-950/20 rounded">
-                <div className="flex items-center justify-between text-[8px] font-mono">
-                  <span className="text-violet-400 font-bold uppercase tracking-wider">● Proximal Core Ring (&lt; 4 km)</span>
-                  <span className="text-slate-500">{proximalCore.length} active node{proximalCore.length !== 1 ? 's' : ''}</span>
+                <div className="flex items-center justify-between text-[8px] font-sans">
+                  <span className="text-violet-400 font-bold uppercase tracking-wider">● Right down the road (Less than 2 miles away)</span>
+                  <span className="text-slate-500">{proximalCore.length} active user{proximalCore.length !== 1 ? 's' : ''}</span>
                 </div>
                 {proximalCore.length === 0 ? (
-                  <span className="text-[9px] text-slate-600 italic font-mono pl-3">No proximal transmitters detected in coordinate range.</span>
+                  <span className="text-[9px] text-slate-600 italic font-sans pl-3">No updates found close to you right now.</span>
                 ) : (
                   <div className="flex flex-wrap gap-3 pl-2 py-1">
                     {proximalCore.map(tray => {
@@ -275,7 +275,7 @@ export default function StoryTray() {
                           <img src={tray.avatarUrl || 'https://picsum.photos/seed/placeholder'} alt={tray.username} className="w-5 h-5 rounded-full object-cover" />
                           <div className="flex flex-col leading-none">
                             <span className="text-[10px] font-bold text-slate-200">@{tray.username}</span>
-                            <span className="text-[8px] font-mono text-violet-400 mt-0.5">{tray.distance} km</span>
+                            <span className="text-[8px] font-sans text-violet-400 mt-0.5">{tray.distance} km</span>
                           </div>
                         </div>
                       );
@@ -286,12 +286,12 @@ export default function StoryTray() {
 
               {/* RING 2: TRANSIT VECTOR */}
               <div className="flex flex-col gap-2 p-2 bg-slate-900/20 border border-teal-950/20 rounded">
-                <div className="flex items-center justify-between text-[8px] font-mono">
-                  <span className="text-teal-400 font-bold uppercase tracking-wider">● Transit Vector Ring (4 km - 12 km)</span>
-                  <span className="text-slate-500">{transitVector.length} active node{transitVector.length !== 1 ? 's' : ''}</span>
+                <div className="flex items-center justify-between text-[8px] font-sans">
+                  <span className="text-teal-400 font-bold uppercase tracking-wider">● A short drive away (2 to 7 miles away)</span>
+                  <span className="text-slate-500">{transitVector.length} active user{transitVector.length !== 1 ? 's' : ''}</span>
                 </div>
                 {transitVector.length === 0 ? (
-                  <span className="text-[9px] text-slate-600 italic font-mono pl-3">No transit vector transmitters detected in coordinate range.</span>
+                  <span className="text-[9px] text-slate-600 italic font-sans pl-3">No updates found in this range.</span>
                 ) : (
                   <div className="flex flex-wrap gap-3 pl-2 py-1">
                     {transitVector.map(tray => {
@@ -305,7 +305,7 @@ export default function StoryTray() {
                           <img src={tray.avatarUrl || 'https://picsum.photos/seed/placeholder'} alt={tray.username} className="w-5 h-5 rounded-full object-cover" />
                           <div className="flex flex-col leading-none">
                             <span className="text-[10px] font-bold text-slate-200">@{tray.username}</span>
-                            <span className="text-[8px] font-mono text-teal-400 mt-0.5">{tray.distance} km</span>
+                            <span className="text-[8px] font-sans text-teal-400 mt-0.5">{tray.distance} km</span>
                           </div>
                         </div>
                       );
@@ -316,12 +316,12 @@ export default function StoryTray() {
 
               {/* RING 3: HORIZON PERIMETER */}
               <div className="flex flex-col gap-2 p-2 bg-slate-900/20 border border-slate-800/40 rounded">
-                <div className="flex items-center justify-between text-[8px] font-mono">
-                  <span className="text-slate-400 font-bold uppercase tracking-wider">● Horizon Perimeter Ring (&gt; 12 km)</span>
-                  <span className="text-slate-500">{horizonPerimeter.length} active node{horizonPerimeter.length !== 1 ? 's' : ''}</span>
+                <div className="flex items-center justify-between text-[8px] font-sans">
+                  <span className="text-slate-400 font-bold uppercase tracking-wider">● A bit further out (Over 7 miles away)</span>
+                  <span className="text-slate-500">{horizonPerimeter.length} active user{horizonPerimeter.length !== 1 ? 's' : ''}</span>
                 </div>
                 {horizonPerimeter.length === 0 ? (
-                  <span className="text-[9px] text-slate-600 italic font-mono pl-3">No remote horizons transmitting.</span>
+                  <span className="text-[9px] text-slate-600 italic font-sans pl-3">No updates found far away.</span>
                 ) : (
                   <div className="flex flex-wrap gap-3 pl-2 py-1">
                     {horizonPerimeter.map(tray => {
@@ -335,7 +335,7 @@ export default function StoryTray() {
                           <img src={tray.avatarUrl || 'https://picsum.photos/seed/placeholder'} alt={tray.username} className="w-5 h-5 rounded-full object-cover" />
                           <div className="flex flex-col leading-none">
                             <span className="text-[10px] font-bold text-slate-200">@{tray.username}</span>
-                            <span className="text-[8px] font-mono text-slate-400 mt-0.5">{tray.distance} km</span>
+                            <span className="text-[8px] font-sans text-slate-400 mt-0.5">{tray.distance} km</span>
                           </div>
                         </div>
                       );

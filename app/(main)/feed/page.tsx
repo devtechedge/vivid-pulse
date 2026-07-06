@@ -81,14 +81,14 @@ export default function FeedPage() {
             <div className="w-12 h-12 rounded-full bg-violet-600/10 border border-violet-500/20 flex items-center justify-center text-violet-400 mb-2">
               <Sparkles className="w-6 h-6 animate-bounce" />
             </div>
-            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-200">The Canvas is Empty</h3>
+            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-200">No posts to show yet</h3>
             <p className="text-xs text-slate-500 max-w-sm leading-relaxed">
-              No pulses found on your active timeline. Express your unique vision by publishing a post or following creators on the network.
+              No posts found here. Share your first photo or follow your friends to see their updates!
             </p>
             <div className="flex items-center gap-3 mt-2">
               <Button onClick={() => window.location.reload()} variant="outline" size="sm" className="gap-2">
                 <RefreshCw className="w-3.5 h-3.5" />
-                Sync Grid
+                Refresh Page
               </Button>
             </div>
           </div>
@@ -119,12 +119,12 @@ export default function FeedPage() {
                   {loadingMore ? (
                     <>
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      Loading Next Pulses...
+                      Loading More Posts...
                     </>
                   ) : (
                     <>
                       <Layers className="w-3.5 h-3.5 text-violet-400" />
-                      Load More Pulses
+                      See More Posts
                     </>
                   )}
                 </Button>

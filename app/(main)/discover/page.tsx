@@ -71,11 +71,11 @@ export default function DiscoverPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-900/60">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-violet-600/15 border border-violet-500/20 flex items-center justify-center text-violet-400">
-            <Compass className="w-5 h-5 animate-spin-slow" />
+            <Compass className="w-5 h-5" />
           </div>
           <div className="flex flex-col">
-            <h1 className="text-sm font-bold uppercase tracking-[0.2em] text-slate-100">Algorithmic Grid</h1>
-            <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mt-0.5">Explore curated high-contrast visuals</span>
+            <h1 className="text-sm font-bold uppercase tracking-[0.2em] text-slate-100">Find Beautiful Photos</h1>
+            <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mt-0.5">See beautiful pictures shared by our friendly members</span>
           </div>
         </div>
 
@@ -86,7 +86,7 @@ export default function DiscoverPage() {
             type="text"
             value={searchQuery}
             onChange={handleSearchChange}
-            placeholder="Search hashtags, locations, profiles..."
+            placeholder="Search for words, places, or users..."
             className="w-full bg-slate-900/60 border border-slate-800 text-xs text-slate-200 placeholder:text-slate-600 pl-10 pr-4 py-3 rounded outline-none focus:border-violet-500/80 focus:bg-slate-900 transition-all shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)]"
           />
           {loading && (
@@ -113,9 +113,9 @@ export default function DiscoverPage() {
       ) : posts.length === 0 ? (
         <div className="w-full bg-slate-950 border border-slate-900 rounded p-12 text-center flex flex-col items-center justify-center gap-3">
           <Sparkles className="w-8 h-8 text-slate-700 animate-pulse" />
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">No signals matching &quot;{searchQuery}&quot;</h3>
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">We couldn&apos;t find anything matching &quot;{searchQuery}&quot;</h3>
           <p className="text-[11px] text-slate-600 max-w-xs">
-            Refine your query parameters to extract coordinates, profile namespaces, or hashtags.
+            Try searching with a simpler word or double check your spelling.
           </p>
           <button
             onClick={() => {
@@ -125,7 +125,7 @@ export default function DiscoverPage() {
             className="mt-2 text-xs font-bold text-violet-400 hover:text-violet-300 flex items-center gap-1.5 cursor-pointer uppercase tracking-wider"
           >
             <RefreshCw className="w-3.5 h-3.5" />
-            Clear Coordinates
+            Show All Pictures
           </button>
         </div>
       ) : (
@@ -159,7 +159,7 @@ export default function DiscoverPage() {
                 
                 {/* Author attribution */}
                 <div className="text-center">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Author</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Posted By</span>
                   <span className="text-xs font-bold text-teal-300">@{post.authorUsername}</span>
                 </div>
               </div>
