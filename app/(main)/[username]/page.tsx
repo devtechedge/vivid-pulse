@@ -284,31 +284,47 @@ export default function ProfilePage() {
               <span className="text-[10px] text-slate-600">This creator has not broadcasted any pulses yet.</span>
             </div>
           ) : (
-            <div className="grid grid-cols-3 gap-3 md:gap-4">
-              {posts.map(p => (
-                <div
-                  key={p.id}
-                  onClick={() => setSelectedPostId(p.id)}
-                  className="relative aspect-square bg-slate-950 border border-slate-900 rounded overflow-hidden group cursor-pointer hover:border-violet-500/50 hover:shadow-[0_0_15px_rgba(124,58,237,0.15)] transition-all duration-300"
-                >
-                  <img
-                    src={p.media[0]?.url || 'https://picsum.photos/seed/placeholder/300/300'}
-                    alt="Post Media Cover"
-                    className="w-full h-full object-cover select-none group-hover:scale-105 transition-transform duration-500"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 backdrop-blur-[2px] transition-all flex justify-center items-center gap-4 text-white">
-                    <div className="flex items-center gap-1">
-                      <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
-                      <span className="font-mono text-xs font-bold">{p.likesCount}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <MessageSquare className="w-4 h-4 text-violet-400 fill-violet-400/20" />
-                      <span className="font-mono text-xs font-bold">{p.commentsCount}</span>
+            <div className="grid grid-cols-3 gap-3 md:gap-4 auto-rows-auto">
+              {posts.map((p, idx) => {
+                let gridClass = 'col-span-1 aspect-square';
+                if (p.layoutMatrix === 'asymmetric-split') {
+                  gridClass = 'col-span-2 aspect-[16/10]';
+                } else if (p.layoutMatrix === 'triptych') {
+                  gridClass = 'col-span-2 aspect-[21/9]';
+                } else if (idx % 6 === 1) {
+                  gridClass = 'col-span-1 aspect-[3/4]'; // Tall vertical format
+                } else if (idx % 6 === 3) {
+                  gridClass = 'col-span-2 aspect-[16/9]'; // Wide panoramic format
+                }
+
+                return (
+                  <div
+                    key={p.id}
+                    onClick={() => setSelectedPostId(p.id)}
+                    className={cn(
+                      "relative bg-slate-950 border border-slate-900 rounded overflow-hidden group cursor-pointer hover:border-violet-500/50 hover:shadow-[0_0_15px_rgba(124,58,237,0.15)] transition-all duration-300",
+                      gridClass
+                    )}
+                  >
+                    <img
+                      src={p.media[0]?.url || 'https://picsum.photos/seed/placeholder/300/300'}
+                      alt="Post Media Cover"
+                      className="w-full h-full object-cover select-none group-hover:scale-105 transition-transform duration-500"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 backdrop-blur-[2px] transition-all flex justify-center items-center gap-4 text-white">
+                      <div className="flex items-center gap-1">
+                        <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
+                        <span className="font-mono text-xs font-bold">{p.likesCount}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <MessageSquare className="w-4 h-4 text-violet-400 fill-violet-400/20" />
+                        <span className="font-mono text-xs font-bold">{p.commentsCount}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )
         )}
@@ -321,31 +337,47 @@ export default function ProfilePage() {
               <span className="text-[10px] text-slate-600">Saved content or bookmarked coordinates will appear here.</span>
             </div>
           ) : (
-            <div className="grid grid-cols-3 gap-3 md:gap-4">
-              {bookmarks.map(p => (
-                <div
-                  key={p.id}
-                  onClick={() => setSelectedPostId(p.id)}
-                  className="relative aspect-square bg-slate-950 border border-slate-900 rounded overflow-hidden group cursor-pointer hover:border-violet-500/50 hover:shadow-[0_0_15px_rgba(124,58,237,0.15)] transition-all duration-300"
-                >
-                  <img
-                    src={p.media[0]?.url || 'https://picsum.photos/seed/placeholder/300/300'}
-                    alt="Post Media Cover"
-                    className="w-full h-full object-cover select-none group-hover:scale-105 transition-transform duration-500"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 backdrop-blur-[2px] transition-all flex justify-center items-center gap-4 text-white">
-                    <div className="flex items-center gap-1">
-                      <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
-                      <span className="font-mono text-xs font-bold">{p.likesCount}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <MessageSquare className="w-4 h-4 text-violet-400 fill-violet-400/20" />
-                      <span className="font-mono text-xs font-bold">{p.commentsCount}</span>
+            <div className="grid grid-cols-3 gap-3 md:gap-4 auto-rows-auto">
+              {bookmarks.map((p, idx) => {
+                let gridClass = 'col-span-1 aspect-square';
+                if (p.layoutMatrix === 'asymmetric-split') {
+                  gridClass = 'col-span-2 aspect-[16/10]';
+                } else if (p.layoutMatrix === 'triptych') {
+                  gridClass = 'col-span-2 aspect-[21/9]';
+                } else if (idx % 6 === 1) {
+                  gridClass = 'col-span-1 aspect-[3/4]';
+                } else if (idx % 6 === 3) {
+                  gridClass = 'col-span-2 aspect-[16/9]';
+                }
+
+                return (
+                  <div
+                    key={p.id}
+                    onClick={() => setSelectedPostId(p.id)}
+                    className={cn(
+                      "relative bg-slate-950 border border-slate-900 rounded overflow-hidden group cursor-pointer hover:border-violet-500/50 hover:shadow-[0_0_15px_rgba(124,58,237,0.15)] transition-all duration-300",
+                      gridClass
+                    )}
+                  >
+                    <img
+                      src={p.media[0]?.url || 'https://picsum.photos/seed/placeholder/300/300'}
+                      alt="Post Media Cover"
+                      className="w-full h-full object-cover select-none group-hover:scale-105 transition-transform duration-500"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 backdrop-blur-[2px] transition-all flex justify-center items-center gap-4 text-white">
+                      <div className="flex items-center gap-1">
+                        <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
+                        <span className="font-mono text-xs font-bold">{p.likesCount}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <MessageSquare className="w-4 h-4 text-violet-400 fill-violet-400/20" />
+                        <span className="font-mono text-xs font-bold">{p.commentsCount}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )
         )}

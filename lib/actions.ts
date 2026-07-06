@@ -175,6 +175,13 @@ export interface FeedPost {
   hasLiked: boolean;
   hasBookmarked: boolean;
   isFollowing: boolean;
+  audioUrl?: string | null;
+  audioTitle?: string | null;
+  focalAnchors?: string | null;
+  colorPalette?: string | null;
+  layoutMatrix?: string | null;
+  coAuthors?: string | null;
+  vectorTextPanel?: string | null;
 }
 
 export async function getFeed(cursor?: string, limit = 5): Promise<{ posts: FeedPost[]; nextCursor: string | null }> {
@@ -229,13 +236,33 @@ export async function getFeed(cursor?: string, limit = 5): Promise<{ posts: Feed
       hasLiked,
       hasBookmarked,
       isFollowing,
+      audioUrl: post.audioUrl,
+      audioTitle: post.audioTitle,
+      focalAnchors: post.focalAnchors,
+      colorPalette: post.colorPalette,
+      layoutMatrix: post.layoutMatrix,
+      coAuthors: post.coAuthors,
+      vectorTextPanel: post.vectorTextPanel,
     };
   });
 
   return { posts: feedPosts, nextCursor };
 }
 
-export async function createPost(caption: string, location: string, mediaUrls: string[]) {
+export async function createPost(
+  caption: string,
+  location: string,
+  mediaUrls: string[],
+  meta?: {
+    audioUrl?: string | null;
+    audioTitle?: string | null;
+    focalAnchors?: string | null;
+    colorPalette?: string | null;
+    layoutMatrix?: string | null;
+    coAuthors?: string | null;
+    vectorTextPanel?: string | null;
+  }
+) {
   const currentUser = await getCurrentUser();
   if (!currentUser) return { success: false, error: 'Unauthorized.' };
 
@@ -253,6 +280,13 @@ export async function createPost(caption: string, location: string, mediaUrls: s
     location: location.trim() || null,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
+    audioUrl: meta?.audioUrl || null,
+    audioTitle: meta?.audioTitle || null,
+    focalAnchors: meta?.focalAnchors || null,
+    colorPalette: meta?.colorPalette || null,
+    layoutMatrix: meta?.layoutMatrix || null,
+    coAuthors: meta?.coAuthors || null,
+    vectorTextPanel: meta?.vectorTextPanel || null,
   };
 
   const newMedia: PostMedia[] = mediaUrls.map((url, index) => ({

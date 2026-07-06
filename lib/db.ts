@@ -22,6 +22,13 @@ export interface Post {
   location: string | null;
   createdAt: string;
   updatedAt: string;
+  audioUrl?: string | null; // Identifier for ambient audio loop or voice description
+  audioTitle?: string | null; // Friendly name of the loop
+  focalAnchors?: string | null; // JSON stringified list of tagged focal points
+  colorPalette?: string | null; // JSON stringified list of extracted colors
+  layoutMatrix?: string | null; // layout type like 'normal', 'asymmetric-split', 'triptych'
+  coAuthors?: string | null; // JSON stringified list of co-author usernames
+  vectorTextPanel?: string | null; // Markdown blogging text
 }
 
 export interface PostMedia {
