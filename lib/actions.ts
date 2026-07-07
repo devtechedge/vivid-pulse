@@ -1,7 +1,7 @@
 'use server';
 
 import { cookies } from 'next/headers';
-import { getDB, saveDB, hashPassword, generateUUID, User, Post, PostMedia, Story, PostLike, Comment, Bookmark, Follow, DirectMessage } from './db';
+import { getDB, saveDB, hashPassword, generateUUID, User, Post, PostMedia, Story, PostLike, Comment, Bookmark, Follow, DirectMessage, SafeRoom, SafeRoomMessage } from './db';
 
 // Secret key for custom session integrity
 const SESSION_SECRET = 'vividpulse_signing_secret_2026';
@@ -1631,4 +1631,181 @@ export async function createNeighborhoodSound(title: string, audioDataUrl: strin
   await saveDB(db);
 
   return { success: true, sound: newSound };
+}
+
+// --- SAFE ROOMS ACTIONS (BATCH 4) ---
+
+export async function getSafeRooms(): Promise<SafeRoom[]> {
+  const db = await getDB();
+  if (!db.safeRooms) {
+    db.safeRooms = [
+      {
+        id: 'room-1',
+        name: 'Pinecone Wood Cabin 🌲',
+        creatorId: 'system',
+        creatorUsername: 'elena_pixels',
+        theme: 'amber',
+        soundscape: 'crackle',
+        passcode: '1234',
+        createdAt: new Date(Date.now() - 24 * 3600 * 1000).toISOString()
+      },
+      {
+        id: 'room-2',
+        name: 'Neon Rainfall Lounge 🌧️',
+        creatorId: 'system',
+        creatorUsername: 'cyber_pulse',
+        theme: 'violet',
+        soundscape: 'rain',
+        passcode: '',
+        createdAt: new Date(Date.now() - 12 * 3600 * 1000).toISOString()
+      },
+      {
+        id: 'room-3',
+        name: 'Zen Courtyard Cafe 🎐',
+        creatorId: 'system',
+        creatorUsername: 'alex_vivid',
+        theme: 'emerald',
+        soundscape: 'swallows',
+        passcode: '9999',
+        createdAt: new Date(Date.now() - 6 * 3600 * 1000).toISOString()
+      },
+      {
+        id: 'room-4',
+        name: 'Morning Lo-Fi Sanctuary ☕',
+        creatorId: 'system',
+        creatorUsername: 'kinetic_art',
+        theme: 'slate',
+        soundscape: 'lofi',
+        passcode: '',
+        createdAt: new Date(Date.now() - 3 * 3600 * 1000).toISOString()
+      }
+    ];
+    await saveDB(db);
+  }
+
+  return db.safeRooms;
+}
+
+export async function createSafeRoom(
+  name: string,
+  theme: 'slate' | 'violet' | 'amber' | 'emerald' | 'rose',
+  soundscape: 'none' | 'rain' | 'crackle' | 'swallows' | 'lofi',
+  passcode?: string
+) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Unauthorized' };
+
+  if (!name.trim()) return { success: false, error: 'Room name is required.' };
+
+  const db = await getDB();
+  if (!db.safeRooms) db.safeRooms = [];
+
+  const newRoom: SafeRoom = {
+    id: generateUUID(),
+    name: name.trim(),
+    creatorId: currentUser.id,
+    creatorUsername: currentUser.username,
+    theme,
+    soundscape,
+    passcode: passcode?.trim() || undefined,
+    createdAt: new Date().toISOString()
+  };
+
+  db.safeRooms.push(newRoom);
+  await saveDB(db);
+
+  return { success: true, room: newRoom };
+}
+
+export async function getSafeRoomMessages(roomId: string): Promise<SafeRoomMessage[]> {
+  const db = await getDB();
+  if (!db.safeRoomMessages) {
+    db.safeRoomMessages = [
+      {
+        id: 'room-msg-1',
+        roomId: 'room-1',
+        senderId: 'user-2',
+        senderUsername: 'elena_pixels',
+        senderDisplayName: 'Elena Rostova',
+        senderAvatarUrl: 'https://picsum.photos/seed/elena_avatar/300/300',
+        content: 'Welcome to the Pinecone Wood Cabin sanctuary! Grab a warm blanket, listen to the crackling logs, and share what is on your mind. ☕🪵',
+        createdAt: new Date(Date.now() - 4 * 3600 * 1000).toISOString()
+      },
+      {
+        id: 'room-msg-2',
+        roomId: 'room-2',
+        senderId: 'user-3',
+        senderUsername: 'cyber_pulse',
+        senderDisplayName: 'Marcus Chen',
+        senderAvatarUrl: 'https://picsum.photos/seed/marcus_avatar/300/300',
+        content: 'I love writing code in this neon rain room. It is so soothing. 💻🌧️',
+        createdAt: new Date(Date.now() - 2 * 3600 * 1000).toISOString()
+      }
+    ];
+    await saveDB(db);
+  }
+
+  // Filter messages for this specific room
+  const roomMsgs = db.safeRoomMessages.filter(m => m.roomId === roomId);
+  return roomMsgs.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+}
+
+export async function sendSafeRoomMessage(
+  roomId: string,
+  content: string,
+  options?: {
+    isVolatile?: boolean;
+    destructionDelay?: number;
+    codeSnippet?: string;
+    codeLanguage?: string;
+  }
+) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Unauthorized' };
+
+  if (!content.trim() && !options?.codeSnippet) {
+    return { success: false, error: 'Message cannot be empty.' };
+  }
+
+  const db = await getDB();
+  if (!db.safeRoomMessages) db.safeRoomMessages = [];
+
+  const expiresAt = options?.isVolatile && options?.destructionDelay 
+    ? new Date(Date.now() + options.destructionDelay * 1000).toISOString()
+    : undefined;
+
+  const newMessage: SafeRoomMessage = {
+    id: generateUUID(),
+    roomId,
+    senderId: currentUser.id,
+    senderUsername: currentUser.username,
+    senderDisplayName: currentUser.displayName,
+    senderAvatarUrl: currentUser.avatarUrl,
+    content: content.trim(),
+    createdAt: new Date().toISOString(),
+    isVolatile: options?.isVolatile,
+    destructionDelay: options?.destructionDelay,
+    expiresAt,
+    codeSnippet: options?.codeSnippet,
+    codeLanguage: options?.codeLanguage
+  };
+
+  db.safeRoomMessages.push(newMessage);
+  await saveDB(db);
+
+  return { success: true, message: newMessage };
+}
+
+export async function deleteSafeRoomMessage(messageId: string) {
+  const db = await getDB();
+  if (!db.safeRoomMessages) return { success: false, error: 'No messages found.' };
+
+  const initialLen = db.safeRoomMessages.length;
+  db.safeRoomMessages = db.safeRoomMessages.filter(m => m.id !== messageId);
+
+  if (db.safeRoomMessages.length !== initialLen) {
+    await saveDB(db);
+    return { success: true };
+  }
+  return { success: false, error: 'Message not found' };
 }

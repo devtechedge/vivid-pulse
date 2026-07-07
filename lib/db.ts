@@ -121,6 +121,33 @@ export interface DirectMessage {
 }
 
 // Global state interface for server-side fallback storage
+export interface SafeRoom {
+  id: string;
+  name: string;
+  creatorId: string;
+  creatorUsername: string;
+  theme: 'slate' | 'violet' | 'amber' | 'emerald' | 'rose';
+  soundscape: 'none' | 'rain' | 'crackle' | 'swallows' | 'lofi';
+  passcode?: string;
+  createdAt: string;
+}
+
+export interface SafeRoomMessage {
+  id: string;
+  roomId: string;
+  senderId: string;
+  senderUsername: string;
+  senderDisplayName: string;
+  senderAvatarUrl: string | null;
+  content: string;
+  createdAt: string;
+  isVolatile?: boolean;
+  expiresAt?: string;
+  destructionDelay?: number;
+  codeSnippet?: string;
+  codeLanguage?: string;
+}
+
 export interface DatabaseState {
   users: User[];
   posts: Post[];
@@ -140,6 +167,8 @@ export interface DatabaseState {
   wisdomReflections?: { id: string; userId: string; prompt: string; text: string; createdAt: string }[];
   helpingHandPosts?: { id: string; userId: string; title: string; description: string; type: 'need' | 'offer'; createdAt: string }[];
   neighborhoodSounds?: { id: string; userId: string; title: string; audioDataUrl?: string; createdAt: string }[];
+  safeRooms?: SafeRoom[];
+  safeRoomMessages?: SafeRoomMessage[];
 }
 
 // --- SECURE CRYPTOGRAPHY UTILITY (WEB CRYPTO) ---
