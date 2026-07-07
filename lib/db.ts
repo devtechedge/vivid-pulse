@@ -173,7 +173,102 @@ export interface DatabaseState {
   gratitudeNotes?: { id: string; senderId: string; senderUsername: string; receiverId: string; receiverUsername: string; text: string; createdAt: string }[];
   userRoles?: { userId: string; role: string }[];
   interactionStreaks?: { userId1: string; userId2: string; count: number; lastInteractedAt: string }[];
+  atticKeepsakes?: AtticKeepsake[];
+  dailyWins?: DailyWin[];
+  familyMembers?: FamilyMember[];
+  gardenFlowers?: CozyGardenFlower[];
+  patchworkQuiltMosaics?: PatchworkQuilt[];
+  paperChainCountdowns?: PaperChainCountdown[];
+  soundAlbums?: SoundAlbum[];
+  leatherDiaryEntries?: LeatherDiaryEntry[];
+  timeCapsuleJars?: TimeCapsuleJar[];
 }
+
+export interface AtticKeepsake {
+  id: string;
+  userId: string;
+  title: string;
+  imageUrl: string;
+  yearOffset: number;
+  dateString: string;
+  memoryText: string;
+  chestId: string;
+  createdAt: string;
+}
+
+export interface DailyWin {
+  id: string;
+  userId: string;
+  category: 'ferns' | 'reading' | 'stretching' | 'baking' | 'brewing' | 'resting';
+  victoryText: string;
+  createdAt: string;
+}
+
+export interface FamilyMember {
+  id: string;
+  userId: string;
+  name: string;
+  relationship: string;
+  avatarUrl: string;
+  photos: { id: string; url: string; caption: string; createdAt: string }[];
+}
+
+export interface CozyGardenFlower {
+  id: string;
+  userId: string;
+  flowerType: 'sunflower' | 'tulip' | 'lavender' | 'rose' | 'daisy';
+  growthStage: number; // 0: seed, 1: sprout, 2: budding, 3: full-bloom
+  positiveUpdate: string;
+  createdAt: string;
+}
+
+export interface PatchworkQuilt {
+  id: string;
+  userId: string;
+  title: string;
+  layoutPattern: 'starburst' | 'checkerboard' | 'chevron' | 'spiral';
+  photoUrls: string[];
+  createdAt: string;
+}
+
+export interface PaperChainCountdown {
+  id: string;
+  userId: string;
+  title: string;
+  targetDate: string;
+  imageUrl: string;
+  ringColor: 'pastel-pink' | 'warm-amber' | 'mint-green' | 'cozy-violet';
+  createdAt: string;
+}
+
+export interface SoundAlbum {
+  id: string;
+  userId: string;
+  title: string;
+  slides: { imageUrl: string; description: string; voiceLabel?: string }[];
+  createdAt: string;
+}
+
+export interface LeatherDiaryEntry {
+  id: string;
+  userId: string;
+  title: string;
+  content: string;
+  isPrivate: boolean;
+  goldLeafTheme: 'classic-burgundy' | 'emerald-gold' | 'midnight-brass';
+  createdAt: string;
+}
+
+export interface TimeCapsuleJar {
+  id: string;
+  userId: string;
+  title: string;
+  unlockDate: string;
+  photoUrls: string[];
+  message: string;
+  createdAt: string;
+}
+
 
 // --- SECURE CRYPTOGRAPHY UTILITY (WEB CRYPTO) ---
 export async function hashPassword(password: string): Promise<string> {
@@ -493,6 +588,162 @@ const getInitialSeedData = async (): Promise<DatabaseState> => {
     { userId1: 'user-1', userId2: 'user-3', count: 2, lastInteractedAt: new Date().toISOString() },
   ];
 
+  const atticKeepsakes: AtticKeepsake[] = [
+    {
+      id: 'keepsake-1',
+      userId: 'user-1',
+      title: 'Grandma’s Blueberry Pie Baking Lesson 🥧',
+      imageUrl: 'https://picsum.photos/seed/keepsake1/600/400',
+      yearOffset: 2,
+      dateString: 'July 7',
+      memoryText: 'This was exactly two years ago today. Grandma spent three hours teaching me how to crimp the edges of a perfect pie crust. The kitchen smelled like butter and warm berries.',
+      chestId: 'holidays',
+      createdAt: new Date(Date.now() - 2 * 365 * 24 * 3600 * 1000).toISOString()
+    },
+    {
+      id: 'keepsake-2',
+      userId: 'user-1',
+      title: 'Summer Lake Hammock Reading Day 📖',
+      imageUrl: 'https://picsum.photos/seed/keepsake2/600/400',
+      yearOffset: 1,
+      dateString: 'July 7',
+      memoryText: 'Last summer’s peaceful afternoon reading by the lake. Best afternoon snooze of my life.',
+      chestId: 'childhood',
+      createdAt: new Date(Date.now() - 1 * 365 * 24 * 3600 * 1000).toISOString()
+    },
+    {
+      id: 'keepsake-3',
+      userId: 'user-1',
+      title: 'First Windowbox Fern Sprout 🌱',
+      imageUrl: 'https://picsum.photos/seed/keepsake3/600/400',
+      yearOffset: 3,
+      dateString: 'July 7',
+      memoryText: 'Three years ago today, our very first fern sprouted its baby fronds in the kitchen. Now it has taken over the whole corner!',
+      chestId: 'travels',
+      createdAt: new Date(Date.now() - 3 * 365 * 24 * 3600 * 1000).toISOString()
+    }
+  ];
+
+  const dailyWins: DailyWin[] = [
+    { id: 'win-1', userId: 'user-1', category: 'ferns', victoryText: 'Gave all five ferns a thorough deep watering and trimmed the dry leaves.', createdAt: new Date(Date.now() - 2 * 3600 * 1000).toISOString() },
+    { id: 'win-2', userId: 'user-1', category: 'reading', victoryText: 'Finally finished Chapter 4 of my cozy detective mystery book!', createdAt: new Date(Date.now() - 12 * 3600 * 1000).toISOString() },
+    { id: 'win-3', userId: 'user-1', category: 'stretching', victoryText: 'Did a slow, peaceful 15-minute leg and back stretch routine by the window.', createdAt: new Date(Date.now() - 18 * 3600 * 1000).toISOString() }
+  ];
+
+  const familyMembers: FamilyMember[] = [
+    {
+      id: 'fam-1',
+      userId: 'user-1',
+      name: 'Grandma Martha',
+      relationship: 'Grandmother',
+      avatarUrl: 'https://picsum.photos/seed/grandma/150/150',
+      photos: [
+        { id: 'fp-1', url: 'https://picsum.photos/seed/f1/400/300', caption: 'Grandma Martha stitching her winter wool quilt.', createdAt: new Date(Date.now() - 10 * 24 * 3600 * 1000).toISOString() },
+        { id: 'fp-2', url: 'https://picsum.photos/seed/f2/400/300', caption: 'Martha’s award-winning lemon meringue tarts.', createdAt: new Date(Date.now() - 20 * 24 * 3600 * 1000).toISOString() }
+      ]
+    },
+    {
+      id: 'fam-2',
+      userId: 'user-1',
+      name: 'Uncle David',
+      relationship: 'Uncle',
+      avatarUrl: 'https://picsum.photos/seed/uncle/150/150',
+      photos: [
+        { id: 'fp-3', url: 'https://picsum.photos/seed/f3/400/300', caption: 'Uncle David teaching us how to kayak down the gentle river.', createdAt: new Date(Date.now() - 40 * 24 * 3600 * 1000).toISOString() }
+      ]
+    },
+    {
+      id: 'fam-3',
+      userId: 'user-1',
+      name: 'Little Lily',
+      relationship: 'Sister',
+      avatarUrl: 'https://picsum.photos/seed/sister/150/150',
+      photos: [
+        { id: 'fp-4', url: 'https://picsum.photos/seed/f4/400/300', caption: 'Lily blowing bubbles under the warm afternoon sun.', createdAt: new Date().toISOString() }
+      ]
+    }
+  ];
+
+  const gardenFlowers: CozyGardenFlower[] = [
+    { id: 'flower-1', userId: 'user-1', flowerType: 'sunflower', growthStage: 3, positiveUpdate: 'Shared home-baked cinnamon rolls with Sarah next door! 🌻', createdAt: new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString() },
+    { id: 'flower-2', userId: 'user-1', flowerType: 'lavender', growthStage: 2, positiveUpdate: 'Spent 20 minutes sitting in silent meditation listening to bird hums.', createdAt: new Date(Date.now() - 1 * 24 * 3600 * 1000).toISOString() },
+    { id: 'flower-3', userId: 'user-1', flowerType: 'rose', growthStage: 1, positiveUpdate: 'Watered the front garden and rescued a tiny bumblebee from a puddle.', createdAt: new Date().toISOString() }
+  ];
+
+  const patchworkQuiltMosaics: PatchworkQuilt[] = [
+    {
+      id: 'quilt-1',
+      userId: 'user-1',
+      title: 'Our Cozy Mid-Summer Quilt Tapestry',
+      layoutPattern: 'checkerboard',
+      photoUrls: [
+        'https://picsum.photos/seed/qu1/200/200',
+        'https://picsum.photos/seed/qu2/200/200',
+        'https://picsum.photos/seed/qu3/200/200',
+        'https://picsum.photos/seed/qu4/200/200',
+        'https://picsum.photos/seed/qu5/200/200',
+        'https://picsum.photos/seed/qu6/200/200',
+        'https://picsum.photos/seed/qu7/200/200',
+        'https://picsum.photos/seed/qu8/200/200',
+        'https://picsum.photos/seed/qu9/200/200',
+      ],
+      createdAt: new Date().toISOString()
+    }
+  ];
+
+  const paperChainCountdowns: PaperChainCountdown[] = [
+    {
+      id: 'countdown-1',
+      userId: 'user-1',
+      title: 'Family Summer Gathering at the Cottage 🏡',
+      targetDate: new Date(Date.now() + 12 * 24 * 3600 * 1000).toISOString().split('T')[0], // 12 days away
+      imageUrl: 'https://picsum.photos/seed/cottage/500/300',
+      ringColor: 'warm-amber',
+      createdAt: new Date().toISOString()
+    }
+  ];
+
+  const soundAlbums: SoundAlbum[] = [
+    {
+      id: 'salbum-1',
+      userId: 'user-1',
+      title: 'Courtyard Summer Wind Chimes 🍃',
+      slides: [
+        { imageUrl: 'https://picsum.photos/seed/slide1/500/350', description: 'The old rusty brass wind chimes Grandma hung on the veranda.', voiceLabel: '"Listen to the soft evening clink..."' },
+        { imageUrl: 'https://picsum.photos/seed/slide2/500/350', description: 'Fresh herbal lavender tea cooling on the wooden table.', voiceLabel: '"The steam smells like mountain fields..."' },
+        { imageUrl: 'https://picsum.photos/seed/slide3/500/350', description: 'Golden sunshine streaming through the kitchen lace curtains.', voiceLabel: '"Warm spots on the wooden floor..."' }
+      ],
+      createdAt: new Date().toISOString()
+    }
+  ];
+
+  const leatherDiaryEntries: LeatherDiaryEntry[] = [
+    {
+      id: 'diary-1',
+      userId: 'user-1',
+      title: 'A Solitary Rain in July',
+      content: 'The rain began around noon. A gentle, persistent patter that cooled the hot asphalt. I sat on the covered porch with a mug of oolong tea, watching the swallows nesting under the eaves. There is a deep, restorative stillness that only a summer rain can bring.',
+      isPrivate: true,
+      goldLeafTheme: 'classic-burgundy',
+      createdAt: new Date(Date.now() - 4 * 3600 * 1000).toISOString()
+    }
+  ];
+
+  const timeCapsuleJars: TimeCapsuleJar[] = [
+    {
+      id: 'capsule-1',
+      userId: 'user-1',
+      title: 'Family Christmas Surprise Jar 🎄',
+      unlockDate: '2026-12-25',
+      photoUrls: [
+        'https://picsum.photos/seed/cap1/400/300',
+        'https://picsum.photos/seed/cap2/400/300'
+      ],
+      message: 'Can’t wait to celebrate! This jar holds our favorite cottage memories from this summer. Merry Christmas!',
+      createdAt: new Date().toISOString()
+    }
+  ];
+
   return {
     users,
     posts,
@@ -516,6 +767,15 @@ const getInitialSeedData = async (): Promise<DatabaseState> => {
     gratitudeNotes,
     userRoles,
     interactionStreaks,
+    atticKeepsakes,
+    dailyWins,
+    familyMembers,
+    gardenFlowers,
+    patchworkQuiltMosaics,
+    paperChainCountdowns,
+    soundAlbums,
+    leatherDiaryEntries,
+    timeCapsuleJars,
   };
 };
 

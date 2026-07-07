@@ -10,6 +10,7 @@ import PostCard from '@/components/feed/PostCard';
 import StoryViewer from '@/components/stories/StoryViewer';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
+import MemoryLanes from '@/components/profile/MemoryLanes';
 
 export default function ProfilePage() {
   const params = useParams();
@@ -23,8 +24,8 @@ export default function ProfilePage() {
   const [loading, setLoading] = React.useState(true);
   const [followPending, setFollowPending] = React.useState(false);
 
-  // Active Tab: 'posts' | 'bookmarks' | 'analytics' | 'vault'
-  const [activeTab, setActiveTab] = React.useState<'posts' | 'bookmarks' | 'analytics' | 'vault'>('posts');
+  // Active Tab: 'posts' | 'bookmarks' | 'analytics' | 'vault' | 'organizers'
+  const [activeTab, setActiveTab] = React.useState<'posts' | 'bookmarks' | 'analytics' | 'vault' | 'organizers'>('posts');
 
   // Story Viewer Modal trigger for highlight preview
   const [activeHighlightIndex, setActiveHighlightIndex] = React.useState<number | null>(null);
@@ -294,6 +295,20 @@ export default function ProfilePage() {
           <Archive className="w-4 h-4" />
           <span>Narrative Vault</span>
         </button>
+
+        {/* Memory Lanes Organizers Tab (Batch 6) */}
+        <button
+          onClick={() => setActiveTab('organizers')}
+          className={cn(
+            'flex items-center gap-2 py-2 text-xs font-bold uppercase tracking-wider border-b-2 cursor-pointer transition-all',
+            activeTab === 'organizers'
+              ? 'border-teal-400 text-teal-300 shadow-[0_4px_10px_rgba(20,184,166,0.05)]'
+              : 'border-transparent text-slate-500 hover:text-slate-300'
+          )}
+        >
+          <FolderHeart className="w-4 h-4" />
+          <span>Memory Lanes</span>
+        </button>
       </div>
 
       {/* 3. ACTIVE TAB CONTENT VIEW */}
@@ -550,6 +565,10 @@ export default function ProfilePage() {
               </div>
             </div>
           )
+        )}
+
+        {activeTab === 'organizers' && (
+          <MemoryLanes username={username} isSelf={isSelf} currentUser={currentUser} />
         )}
       </div>
 

@@ -1,7 +1,7 @@
 'use server';
 
 import { cookies } from 'next/headers';
-import { getDB, saveDB, hashPassword, generateUUID, User, Post, PostMedia, Story, PostLike, Comment, Bookmark, Follow, DirectMessage, SafeRoom, SafeRoomMessage } from './db';
+import { getDB, saveDB, hashPassword, generateUUID, User, Post, PostMedia, Story, PostLike, Comment, Bookmark, Follow, DirectMessage, SafeRoom, SafeRoomMessage, AtticKeepsake, DailyWin, FamilyMember, CozyGardenFlower, PatchworkQuilt, PaperChainCountdown, SoundAlbum, LeatherDiaryEntry, TimeCapsuleJar } from './db';
 
 // Secret key for custom session integrity
 const SESSION_SECRET = 'vividpulse_signing_secret_2026';
@@ -1939,3 +1939,392 @@ export async function getInteractionStreaks() {
     s.userId1 === currentUser.id || s.userId2 === currentUser.id
   );
 }
+
+// --- BATCH 6: EVERYDAY ORGANIZING & PERSONAL MEMORY LANES ACTIONS ---
+
+export async function getAtticKeepsakes(userId?: string): Promise<AtticKeepsake[]> {
+  const db = await getDB();
+  if (!db.atticKeepsakes) db.atticKeepsakes = [];
+  
+  let targetId = userId;
+  if (!targetId) {
+    const currentUser = await getCurrentUser();
+    if (!currentUser) return [];
+    targetId = currentUser.id;
+  }
+  return db.atticKeepsakes.filter(k => k.userId === targetId);
+}
+
+export async function addAtticKeepsake(
+  title: string,
+  imageUrl: string,
+  yearOffset: number,
+  dateString: string,
+  memoryText: string,
+  chestId: string
+) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Unauthorized' };
+
+  const db = await getDB();
+  if (!db.atticKeepsakes) db.atticKeepsakes = [];
+
+  const newKeepsake: AtticKeepsake = {
+    id: generateUUID(),
+    userId: currentUser.id,
+    title,
+    imageUrl,
+    yearOffset,
+    dateString,
+    memoryText,
+    chestId,
+    createdAt: new Date().toISOString()
+  };
+
+  db.atticKeepsakes.push(newKeepsake);
+  await saveDB(db);
+
+  return { success: true, keepsake: newKeepsake };
+}
+
+export async function getDailyWins(userId?: string): Promise<DailyWin[]> {
+  const db = await getDB();
+  if (!db.dailyWins) db.dailyWins = [];
+
+  let targetId = userId;
+  if (!targetId) {
+    const currentUser = await getCurrentUser();
+    if (!currentUser) return [];
+    targetId = currentUser.id;
+  }
+  return db.dailyWins.filter(w => w.userId === targetId).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
+export async function addDailyWin(category: 'ferns' | 'reading' | 'stretching' | 'baking' | 'brewing' | 'resting', victoryText: string) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Unauthorized' };
+
+  const db = await getDB();
+  if (!db.dailyWins) db.dailyWins = [];
+
+  const newWin: DailyWin = {
+    id: generateUUID(),
+    userId: currentUser.id,
+    category,
+    victoryText,
+    createdAt: new Date().toISOString()
+  };
+
+  db.dailyWins.push(newWin);
+  await saveDB(db);
+
+  return { success: true, win: newWin };
+}
+
+export async function deleteDailyWin(id: string) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Unauthorized' };
+
+  const db = await getDB();
+  if (!db.dailyWins) return { success: false, error: 'No daily wins found.' };
+
+  db.dailyWins = db.dailyWins.filter(w => w.id !== id);
+  await saveDB(db);
+
+  return { success: true };
+}
+
+export async function getFamilyMembers(userId?: string): Promise<FamilyMember[]> {
+  const db = await getDB();
+  if (!db.familyMembers) db.familyMembers = [];
+
+  let targetId = userId;
+  if (!targetId) {
+    const currentUser = await getCurrentUser();
+    if (!currentUser) return [];
+    targetId = currentUser.id;
+  }
+  return db.familyMembers.filter(m => m.userId === targetId);
+}
+
+export async function addFamilyMember(name: string, relationship: string, avatarUrl: string) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Unauthorized' };
+
+  const db = await getDB();
+  if (!db.familyMembers) db.familyMembers = [];
+
+  const newMember: FamilyMember = {
+    id: generateUUID(),
+    userId: currentUser.id,
+    name,
+    relationship,
+    avatarUrl: avatarUrl || 'https://picsum.photos/seed/family/150/150',
+    photos: []
+  };
+
+  db.familyMembers.push(newMember);
+  await saveDB(db);
+
+  return { success: true, member: newMember };
+}
+
+export async function addFamilyPhoto(memberId: string, url: string, caption: string) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Unauthorized' };
+
+  const db = await getDB();
+  if (!db.familyMembers) return { success: false, error: 'No members found' };
+
+  const member = db.familyMembers.find(m => m.id === memberId);
+  if (!member) return { success: false, error: 'Member not found' };
+
+  member.photos.push({
+    id: generateUUID(),
+    url,
+    caption,
+    createdAt: new Date().toISOString()
+  });
+
+  await saveDB(db);
+  return { success: true, member };
+}
+
+export async function getGardenFlowers(userId?: string): Promise<CozyGardenFlower[]> {
+  const db = await getDB();
+  if (!db.gardenFlowers) db.gardenFlowers = [];
+
+  let targetId = userId;
+  if (!targetId) {
+    const currentUser = await getCurrentUser();
+    if (!currentUser) return [];
+    targetId = currentUser.id;
+  }
+  return db.gardenFlowers.filter(f => f.userId === targetId);
+}
+
+export async function addGardenFlowerUpdate(flowerType: 'sunflower' | 'tulip' | 'lavender' | 'rose' | 'daisy', positiveUpdate: string) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Unauthorized' };
+
+  const db = await getDB();
+  if (!db.gardenFlowers) db.gardenFlowers = [];
+
+  const activeFlower = db.gardenFlowers.find(f => f.userId === currentUser.id && f.flowerType === flowerType && f.growthStage < 3);
+
+  if (activeFlower) {
+    activeFlower.growthStage += 1;
+    activeFlower.positiveUpdate = positiveUpdate;
+    await saveDB(db);
+    return { success: true, flower: activeFlower, newlyCreated: false };
+  } else {
+    const newFlower: CozyGardenFlower = {
+      id: generateUUID(),
+      userId: currentUser.id,
+      flowerType,
+      growthStage: 1,
+      positiveUpdate,
+      createdAt: new Date().toISOString()
+    };
+    db.gardenFlowers.push(newFlower);
+    await saveDB(db);
+    return { success: true, flower: newFlower, newlyCreated: true };
+  }
+}
+
+export async function getPatchworkQuilts(userId?: string): Promise<PatchworkQuilt[]> {
+  const db = await getDB();
+  if (!db.patchworkQuiltMosaics) db.patchworkQuiltMosaics = [];
+
+  let targetId = userId;
+  if (!targetId) {
+    const currentUser = await getCurrentUser();
+    if (!currentUser) return [];
+    targetId = currentUser.id;
+  }
+  return db.patchworkQuiltMosaics.filter(q => q.userId === targetId);
+}
+
+export async function generatePatchworkQuilt(title: string, layoutPattern: 'starburst' | 'checkerboard' | 'chevron' | 'spiral', photoUrls: string[]) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Unauthorized' };
+
+  const db = await getDB();
+  if (!db.patchworkQuiltMosaics) db.patchworkQuiltMosaics = [];
+
+  const newQuilt: PatchworkQuilt = {
+    id: generateUUID(),
+    userId: currentUser.id,
+    title,
+    layoutPattern,
+    photoUrls: photoUrls.length > 0 ? photoUrls : [
+      'https://picsum.photos/seed/q1/200/200',
+      'https://picsum.photos/seed/q2/200/200',
+      'https://picsum.photos/seed/q3/200/200',
+      'https://picsum.photos/seed/q4/200/200',
+      'https://picsum.photos/seed/q5/200/200',
+      'https://picsum.photos/seed/q6/200/200',
+      'https://picsum.photos/seed/q7/200/200',
+      'https://picsum.photos/seed/q8/200/200',
+      'https://picsum.photos/seed/q9/200/200',
+    ],
+    createdAt: new Date().toISOString()
+  };
+
+  db.patchworkQuiltMosaics.push(newQuilt);
+  await saveDB(db);
+
+  return { success: true, quilt: newQuilt };
+}
+
+export async function getPaperChains(userId?: string): Promise<PaperChainCountdown[]> {
+  const db = await getDB();
+  if (!db.paperChainCountdowns) db.paperChainCountdowns = [];
+
+  let targetId = userId;
+  if (!targetId) {
+    const currentUser = await getCurrentUser();
+    if (!currentUser) return [];
+    targetId = currentUser.id;
+  }
+  return db.paperChainCountdowns.filter(c => c.userId === targetId);
+}
+
+export async function createPaperChain(title: string, targetDate: string, imageUrl: string, ringColor: 'pastel-pink' | 'warm-amber' | 'mint-green' | 'cozy-violet') {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Unauthorized' };
+
+  const db = await getDB();
+  if (!db.paperChainCountdowns) db.paperChainCountdowns = [];
+
+  const newChain: PaperChainCountdown = {
+    id: generateUUID(),
+    userId: currentUser.id,
+    title,
+    targetDate,
+    imageUrl: imageUrl || 'https://picsum.photos/seed/countdown/500/300',
+    ringColor,
+    createdAt: new Date().toISOString()
+  };
+
+  db.paperChainCountdowns.push(newChain);
+  await saveDB(db);
+
+  return { success: true, chain: newChain };
+}
+
+export async function getSoundAlbums(userId?: string): Promise<SoundAlbum[]> {
+  const db = await getDB();
+  if (!db.soundAlbums) db.soundAlbums = [];
+
+  let targetId = userId;
+  if (!targetId) {
+    const currentUser = await getCurrentUser();
+    if (!currentUser) return [];
+    targetId = currentUser.id;
+  }
+  return db.soundAlbums.filter(a => a.userId === targetId);
+}
+
+export async function createSoundAlbum(title: string, slides: { imageUrl: string, description: string, voiceLabel?: string }[]) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Unauthorized' };
+
+  const db = await getDB();
+  if (!db.soundAlbums) db.soundAlbums = [];
+
+  const newSoundAlbum: SoundAlbum = {
+    id: generateUUID(),
+    userId: currentUser.id,
+    title,
+    slides,
+    createdAt: new Date().toISOString()
+  };
+
+  db.soundAlbums.push(newSoundAlbum);
+  await saveDB(db);
+
+  return { success: true, album: newSoundAlbum };
+}
+
+export async function getLeatherDiaryEntries(userId?: string): Promise<LeatherDiaryEntry[]> {
+  const db = await getDB();
+  if (!db.leatherDiaryEntries) db.leatherDiaryEntries = [];
+
+  let targetId = userId;
+  if (!targetId) {
+    const currentUser = await getCurrentUser();
+    if (!currentUser) return [];
+    targetId = currentUser.id;
+  }
+  
+  const currentUser = await getCurrentUser();
+  const isSelf = currentUser && currentUser.id === targetId;
+
+  const entries = db.leatherDiaryEntries.filter(e => e.userId === targetId);
+  if (isSelf) {
+    return entries.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  } else {
+    return entries.filter(e => !e.isPrivate).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+}
+
+export async function createLeatherDiaryEntry(title: string, content: string, isPrivate: boolean, goldLeafTheme: 'classic-burgundy' | 'emerald-gold' | 'midnight-brass') {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Unauthorized' };
+
+  const db = await getDB();
+  if (!db.leatherDiaryEntries) db.leatherDiaryEntries = [];
+
+  const newEntry: LeatherDiaryEntry = {
+    id: generateUUID(),
+    userId: currentUser.id,
+    title,
+    content,
+    isPrivate,
+    goldLeafTheme,
+    createdAt: new Date().toISOString()
+  };
+
+  db.leatherDiaryEntries.push(newEntry);
+  await saveDB(db);
+
+  return { success: true, entry: newEntry };
+}
+
+export async function getTimeCapsuleJars(userId?: string): Promise<TimeCapsuleJar[]> {
+  const db = await getDB();
+  if (!db.timeCapsuleJars) db.timeCapsuleJars = [];
+
+  let targetId = userId;
+  if (!targetId) {
+    const currentUser = await getCurrentUser();
+    if (!currentUser) return [];
+    targetId = currentUser.id;
+  }
+  return db.timeCapsuleJars.filter(j => j.userId === targetId);
+}
+
+export async function createTimeCapsuleJar(title: string, unlockDate: string, photoUrls: string[], message: string) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Unauthorized' };
+
+  const db = await getDB();
+  if (!db.timeCapsuleJars) db.timeCapsuleJars = [];
+
+  const newJar: TimeCapsuleJar = {
+    id: generateUUID(),
+    userId: currentUser.id,
+    title,
+    unlockDate,
+    photoUrls,
+    message,
+    createdAt: new Date().toISOString()
+  };
+
+  db.timeCapsuleJars.push(newJar);
+  await saveDB(db);
+
+  return { success: true, jar: newJar };
+}
+
