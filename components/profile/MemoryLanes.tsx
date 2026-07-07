@@ -76,7 +76,9 @@ export default function MemoryLanes({ username, isSelf, currentUser }: MemoryLan
 
   // Load all lists
   const loadAllData = async () => {
-    setLoading(true);
+    if (!loading) {
+      setLoading(true);
+    }
     try {
       const keepsakesList = await getAtticKeepsakes();
       const winsList = await getDailyWins();
@@ -105,7 +107,9 @@ export default function MemoryLanes({ username, isSelf, currentUser }: MemoryLan
   };
 
   React.useEffect(() => {
-    loadAllData();
+    setTimeout(() => {
+      loadAllData();
+    }, 0);
   }, [username]);
 
   // Form submission helpers
@@ -807,7 +811,7 @@ export default function MemoryLanes({ username, isSelf, currentUser }: MemoryLan
 
                       return (
                         <div key={flower.id} className="flex flex-col items-center gap-2 bg-[#211713] p-3 border border-amber-950 rounded-lg shadow-md hover:scale-[1.03] transition-transform">
-                          <div className="text-4xl animate-bounce" style={{ animationDuration: `${2 + Math.random()*2}s` }}>
+                          <div className="text-4xl animate-bounce" style={{ animationDuration: `${2 + ((flower.id.charCodeAt(0) || 0) % 3)}s` }}>
                             {flower.growthStage === 0 && '🌱'}
                             {flower.growthStage === 1 && '🌿'}
                             {flower.growthStage === 2 && '🌸'}

@@ -6,8 +6,9 @@ import {
   Search, Heart, MessageSquare, Compass, Sparkles, Loader2, RefreshCw,
   MapPin, Map, Footprints, Camera, Flame, Snowflake, Bird, Volume2, VolumeX,
   Utensils, MessageCircle, Share2, Plus, PenTool, Scissors, ArrowRight, ArrowLeft,
-  Paintbrush, Hammer, Check, Info, Calendar, User, Eye, Sparkle, Sliders
+  Paintbrush, Hammer, Check, Info, Calendar, User, Eye, Sparkle, Sliders, Mic, HelpCircle
 } from 'lucide-react';
+import { useAccessibility } from '@/components/ui/AccessibilityProvider';
 import { 
   getCurrentUser, getDiscoverPosts, DiscoverPost, getFeed, FeedPost,
   getNostalgicStories, createNostalgicStory, 
@@ -26,6 +27,19 @@ interface AccessibleCurationsProps {
 }
 
 export default function AccessibleCurations({ currentUser }: AccessibleCurationsProps) {
+  const {
+    theme, setTheme,
+    isEasyMode, setIsEasyMode,
+    isQuietMode, setIsQuietMode,
+    isMagnifierEnabled, setIsMagnifierEnabled,
+    isReadAloudEnabled, setIsReadAloudEnabled,
+    isSteadyPressEnabled, setIsSteadyPressEnabled,
+    stablePress,
+    triggerUndo,
+    speak, stopSpeaking, isSpeaking,
+    startDictation, isDictating
+  } = useAccessibility();
+
   // Navigation tabs: 'photos' | 'nostalgic' | 'map' | 'furry' | 'kitchen' | 'slow' | 'craft'
   const [activeTab, setActiveTab] = React.useState<'photos' | 'nostalgic' | 'map' | 'furry' | 'kitchen' | 'slow' | 'craft'>('photos');
 
@@ -212,11 +226,18 @@ export default function AccessibleCurations({ currentUser }: AccessibleCurations
 
     const res = await createNostalgicStory(newStoryTitle, newStoryCategory, img, newStoryText);
     if (res.success) {
+      const storyId = res.story?.id;
       setIsStoryModalOpen(false);
       setNewStoryTitle('');
       setNewStoryText('');
       setNewStoryImage('');
       loadActiveViewData();
+
+      triggerUndo("Story Shared to Nostalgic Corner", () => {
+        if (storyId) {
+          setNostalgicStories(prev => prev.filter(s => s.id !== storyId));
+        }
+      });
     }
   };
 
@@ -231,11 +252,18 @@ export default function AccessibleCurations({ currentUser }: AccessibleCurations
 
     const res = await createNeighborhoodBench(newBenchTitle, newBenchDesc, newBenchType, x, y);
     if (res.success) {
+      const benchId = res.bench?.id;
       setIsBenchModalOpen(false);
       setNewBenchTitle('');
       setNewBenchDesc('');
       setTempPin(null);
       loadActiveViewData();
+
+      triggerUndo("Neighborhood Bench Point Added", () => {
+        if (benchId) {
+          setBenches(prev => prev.filter(b => b.id !== benchId));
+        }
+      });
     }
   };
 
@@ -449,35 +477,292 @@ export default function AccessibleCurations({ currentUser }: AccessibleCurations
         )}
       </AnimatePresence>
 
-      {/* 2. ACCESSIBLE EXPLORATION NAVIGATION RAILS */}
-      <div id="curations-navigation-rail" className="flex flex-wrap gap-2 border-b border-slate-900 pb-2 overflow-x-auto scrollbar-none">
-        {[
-          { id: 'photos', label: '🧭 Find Photos', emoji: '📸' },
-          { id: 'nostalgic', label: 'Nostalgic Corner', emoji: '📜' },
-          { id: 'map', label: 'Neighborhood Map', emoji: '🗺️' },
-          { id: 'furry', label: 'Furry Friends', emoji: '🐾' },
-          { id: 'kitchen', label: 'Community Kitchen', emoji: '🍳' },
-          { id: 'slow', label: 'Slow Streams', emoji: '📺' },
-          { id: 'craft', label: 'Craft Guild', emoji: '🧶' }
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => {
-              setActiveTab(tab.id as any);
-              setSearchQuery('');
-            }}
-            className={cn(
-              'flex items-center gap-2 px-4 py-3 rounded-t-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border-t border-x',
-              activeTab === tab.id
-                ? 'bg-slate-950 border-slate-800 text-teal-400 border-b-2 border-b-teal-400 shadow-[0_4px_15px_rgba(20,184,166,0.05)]'
-                : 'bg-transparent border-transparent text-slate-500 hover:text-slate-300 hover:bg-slate-900/30'
-            )}
-          >
-            <span>{tab.emoji}</span>
-            <span>{tab.label}</span>
-          </button>
-        ))}
+      {/* ACCESS & COMFORT INTERACTIVE CONTROL BOARD */}
+      <div 
+        id="comfort-accessibility-board"
+        className={cn(
+          "w-full rounded-2xl border-2 p-6 md:p-8 flex flex-col gap-6 shadow-xl relative mt-2",
+          theme === 'cozy-paper' && "bg-[#eae3d2]/40 border-amber-800/25 text-stone-900",
+          theme === 'contrast' && "bg-black border-4 border-yellow-400 text-white font-mono",
+          theme === 'dark' && "bg-slate-900/40 border-slate-800 text-slate-100"
+        )}
+      >
+        <div className="absolute top-4 right-4 flex items-center gap-2">
+          <span className="relative flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-teal-500"></span>
+          </span>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-teal-400">Comfort System Active</span>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <span className="text-xs font-bold text-teal-500 uppercase tracking-[0.2em] block">👵 HIGH ACCESSIBILITY & COMFORT CENTER</span>
+          <h2 className="text-xl font-bold tracking-tight">Cozy Vision & Audio Companion</h2>
+          <p className="text-xs opacity-80 leading-relaxed max-w-2xl">
+            We want this community space to feel as restorative, warm, and clear as a peaceful morning porch. 
+            Adjust the toggles below to set things exactly how your eyes and hands like them.
+          </p>
+        </div>
+
+        {/* Bento Grid layout for simple toggles */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-2">
+          
+          {/* 1. THEME SWITCHER */}
+          <div className={cn(
+            "p-4 rounded-xl border flex flex-col justify-between gap-3",
+            theme === 'cozy-paper' ? "bg-stone-50 border-stone-200" : theme === 'contrast' ? "bg-black border-2 border-white" : "bg-slate-950 border-slate-850"
+          )}>
+            <div className="flex flex-col">
+              <span className="text-xs font-extrabold uppercase tracking-wider text-teal-400">Cozy Themes</span>
+              <span className="text-[11px] opacity-70 mt-1">Eye-rest color presets</span>
+            </div>
+            <div className="flex flex-col gap-1.5 mt-1">
+              {[
+                { id: 'dark', label: '🌃 Dark evening (Standard)', color: 'bg-[#070A13] text-slate-100 border-slate-700' },
+                { id: 'contrast', label: '👁️ High-Contrast Black', color: 'bg-black text-white border-yellow-400 font-mono' },
+                { id: 'cozy-paper', label: '📖 Soothing Cozy Paper', color: 'bg-[#FAF7F0] text-stone-900 border-amber-800' }
+              ].map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => stablePress(() => setTheme(t.id as any))}
+                  className={cn(
+                    "w-full text-left py-2 px-3 text-xs font-bold rounded border transition-all cursor-pointer flex items-center justify-between",
+                    t.color,
+                    theme === t.id ? "ring-2 ring-teal-400 scale-102 font-extrabold" : "opacity-60 hover:opacity-100"
+                  )}
+                >
+                  <span>{t.label}</span>
+                  {theme === t.id && <Check className="w-3.5 h-3.5" />}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 2. EASY MODE TOGGLE */}
+          <div className={cn(
+            "p-4 rounded-xl border flex flex-col justify-between gap-3",
+            theme === 'cozy-paper' ? "bg-stone-50 border-stone-200" : theme === 'contrast' ? "bg-black border-2 border-white" : "bg-slate-950 border-slate-850"
+          )}>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xs font-extrabold uppercase tracking-wider text-teal-400">Easy Mode Toggle</span>
+              <span className="text-[11px] opacity-70 mt-0.5">Huge squares & clear non-technical words</span>
+            </div>
+            <div className="flex items-center justify-between mt-2">
+              <span className="text-xs font-bold">{isEasyMode ? "🌟 GIANT EASY MODE ON" : "Standard settings active"}</span>
+              <div 
+                onClick={() => stablePress(() => setIsEasyMode(!isEasyMode))}
+                className={cn(
+                  "w-14 h-7 rounded-full p-0.5 cursor-pointer transition-all duration-300",
+                  isEasyMode ? "bg-teal-500" : "bg-slate-800"
+                )}
+              >
+                <div className={cn(
+                  "w-6 h-6 rounded-full bg-white shadow-md transform transition-all duration-300 flex items-center justify-center",
+                  isEasyMode ? "translate-x-7" : "translate-x-0"
+                )}>
+                  {isEasyMode && <Check className="w-4 h-4 text-teal-600" />}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 3. READ-ALOUD COMPANION */}
+          <div className={cn(
+            "p-4 rounded-xl border flex flex-col justify-between gap-3",
+            theme === 'cozy-paper' ? "bg-stone-50 border-stone-200" : theme === 'contrast' ? "bg-black border-2 border-white" : "bg-slate-950 border-slate-850"
+          )}>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xs font-extrabold uppercase tracking-wider text-teal-400">The Read-Aloud Companion</span>
+              <span className="text-[11px] opacity-70 mt-0.5">Click any text block to hear Pip speak it aloud</span>
+            </div>
+            <div className="flex items-center justify-between mt-2">
+              <span className="text-xs font-bold">{isReadAloudEnabled ? "🔊 COMPANION SPEAKING" : "Companion quiet"}</span>
+              <div 
+                onClick={() => stablePress(() => setIsReadAloudEnabled(!isReadAloudEnabled))}
+                className={cn(
+                  "w-14 h-7 rounded-full p-0.5 cursor-pointer transition-all duration-300",
+                  isReadAloudEnabled ? "bg-teal-500" : "bg-slate-800"
+                )}
+              >
+                <div className={cn(
+                  "w-6 h-6 rounded-full bg-white shadow-md transform transition-all duration-300 flex items-center justify-center",
+                  isReadAloudEnabled ? "translate-x-7" : "translate-x-0"
+                )}>
+                  {isReadAloudEnabled && <Check className="w-4 h-4 text-teal-600" />}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 4. DIGITAL MAGNIFYING GLASS */}
+          <div className={cn(
+            "p-4 rounded-xl border flex flex-col justify-between gap-3",
+            theme === 'cozy-paper' ? "bg-stone-50 border-stone-200" : theme === 'contrast' ? "bg-black border-2 border-white" : "bg-slate-950 border-slate-850"
+          )}>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xs font-extrabold uppercase tracking-wider text-teal-400">Magnifying Glass Lens</span>
+              <span className="text-[11px] opacity-70 mt-0.5">Hover or tap photo to zoom & read fine print</span>
+            </div>
+            <div className="flex items-center justify-between mt-2">
+              <span className="text-xs font-bold">{isMagnifierEnabled ? "🔍 LENS ACTIVATED" : "Lens folded away"}</span>
+              <div 
+                onClick={() => stablePress(() => setIsMagnifierEnabled(!isMagnifierEnabled))}
+                className={cn(
+                  "w-14 h-7 rounded-full p-0.5 cursor-pointer transition-all duration-300",
+                  isMagnifierEnabled ? "bg-teal-500" : "bg-slate-800"
+                )}
+              >
+                <div className={cn(
+                  "w-6 h-6 rounded-full bg-white shadow-md transform transition-all duration-300 flex items-center justify-center",
+                  isMagnifierEnabled ? "translate-x-7" : "translate-x-0"
+                )}>
+                  {isMagnifierEnabled && <Check className="w-4 h-4 text-teal-600" />}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 5. DISTRACTION-FREE LAYOUT */}
+          <div className={cn(
+            "p-4 rounded-xl border flex flex-col justify-between gap-3",
+            theme === 'cozy-paper' ? "bg-stone-50 border-stone-200" : theme === 'contrast' ? "bg-black border-2 border-white" : "bg-slate-950 border-slate-850"
+          )}>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xs font-extrabold uppercase tracking-wider text-teal-400">Distraction-Free Layout</span>
+              <span className="text-[11px] opacity-70 mt-0.5">Hides reaction metrics & alerts for pure quiet</span>
+            </div>
+            <div className="flex items-center justify-between mt-2">
+              <span className="text-xs font-bold">{isQuietMode ? "🍃 PURE QUIET FEED" : "Standard counters ON"}</span>
+              <div 
+                onClick={() => stablePress(() => setIsQuietMode(!isQuietMode))}
+                className={cn(
+                  "w-14 h-7 rounded-full p-0.5 cursor-pointer transition-all duration-300",
+                  isQuietMode ? "bg-teal-500" : "bg-slate-800"
+                )}
+              >
+                <div className={cn(
+                  "w-6 h-6 rounded-full bg-white shadow-md transform transition-all duration-300 flex items-center justify-center",
+                  isQuietMode ? "translate-x-7" : "translate-x-0"
+                )}>
+                  {isQuietMode && <Check className="w-4 h-4 text-teal-600" />}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 6. STEADY-PRESS ASSIST */}
+          <div className={cn(
+            "p-4 rounded-xl border flex flex-col justify-between gap-3",
+            theme === 'cozy-paper' ? "bg-stone-50 border-stone-200" : theme === 'contrast' ? "bg-black border-2 border-white" : "bg-slate-950 border-slate-850"
+          )}>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xs font-extrabold uppercase tracking-wider text-teal-400">Steady-Press Assist</span>
+              <span className="text-[11px] opacity-70 mt-0.5">Filters out slight hand shakes & double-clicks</span>
+            </div>
+            <div className="flex items-center justify-between mt-2">
+              <span className="text-xs font-bold">{isSteadyPressEnabled ? "🩺 STABILIZER ON" : "Stabilizer off"}</span>
+              <div 
+                onClick={() => stablePress(() => setIsSteadyPressEnabled(!isSteadyPressEnabled))}
+                className={cn(
+                  "w-14 h-7 rounded-full p-0.5 cursor-pointer transition-all duration-300",
+                  isSteadyPressEnabled ? "bg-teal-500" : "bg-slate-800"
+                )}
+              >
+                <div className={cn(
+                  "w-6 h-6 rounded-full bg-white shadow-md transform transition-all duration-300 flex items-center justify-center",
+                  isSteadyPressEnabled ? "translate-x-7" : "translate-x-0"
+                )}>
+                  {isSteadyPressEnabled && <Check className="w-4 h-4 text-teal-600" />}
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Global Keyboard Shortcut Guidelines Footnote */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mt-2 pt-4 border-t border-slate-850 text-[10px] opacity-65 font-medium leading-relaxed">
+          <span className="flex items-center gap-1">
+            <HelpCircle className="w-3.5 h-3.5 text-teal-500" />
+            <span><strong>Desktop Keyboard Helpers:</strong> Press <strong>Spacebar</strong> to scroll down smoothly, <strong>Shift+Space</strong> to scroll up. Press <strong>Alt+E</strong> to toggle Easy Mode.</span>
+          </span>
+          <span>Click <strong>Pip the Bluebird 🐦</strong> in the bottom right corner to hear cozy jokes or receive guides.</span>
+        </div>
       </div>
+
+      {/* 2. ACCESSIBLE EXPLORATION NAVIGATION RAILS */}
+      {isEasyMode ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5" id="easy-mode-navigation-rail">
+          {[
+            { id: 'photos', label: '📸 EXPLORE PHOTOS', desc: 'Look at beautiful quiet pictures shared by neighbors', emoji: '📸' },
+            { id: 'nostalgic', label: '📜 STORIES & MEMORIES', desc: 'Read recollections or write a new one', emoji: '✍️' },
+            { id: 'map', label: '🗺️ NEIGHBORHOOD MAP', desc: 'Find park benches and historic neighborhood places', emoji: '🌳' },
+            { id: 'furry', label: '🐾 PET AN ANIMAL', desc: 'Say hello to dogs, cats, and bunny rabbits', emoji: '🐶' },
+            { id: 'kitchen', label: '🍳 RECIPE BOOK', desc: 'Cozy kitchen ideas and simple cooking steps', emoji: '🥧' },
+            { id: 'slow', label: '📺 COZY CHANNELS', desc: 'Listen to a crackling fireplace or birds chirping', emoji: '🔥' },
+            { id: 'craft', label: '🧶 CRAFT GUILD', desc: 'See neighborly woodwork, knitting, and pottery', emoji: '🎨' }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => {
+                stablePress(() => {
+                  setActiveTab(tab.id as any);
+                  setSearchQuery('');
+                });
+              }}
+              className={cn(
+                'p-6 rounded-2xl flex flex-col items-center justify-center text-center gap-3 border-4 transition-all cursor-pointer group shadow-lg',
+                activeTab === tab.id
+                  ? theme === 'cozy-paper'
+                    ? 'bg-amber-100 border-amber-800 text-stone-900 shadow-amber-900/10'
+                    : theme === 'contrast'
+                      ? 'bg-white border-teal-400 text-black'
+                      : 'bg-violet-950/60 border-teal-400 text-teal-300 animate-pulse'
+                  : theme === 'cozy-paper'
+                    ? 'bg-[#eae3d2]/60 border-amber-800/10 text-stone-700 hover:bg-[#ded1b7]/60'
+                    : theme === 'contrast'
+                      ? 'bg-black border-2 border-slate-700 text-slate-300 hover:border-white'
+                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+              )}
+            >
+              <span className="text-4xl group-hover:scale-110 transition-transform">{tab.emoji}</span>
+              <span className="text-lg font-extrabold uppercase tracking-wider">{tab.label}</span>
+              <span className="text-xs opacity-75 font-medium leading-relaxed max-w-[200px]">{tab.desc}</span>
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div id="curations-navigation-rail" className="flex flex-wrap gap-2 border-b border-slate-900 pb-2 overflow-x-auto scrollbar-none">
+          {[
+            { id: 'photos', label: '📸 Find Photos', emoji: '📸' },
+            { id: 'nostalgic', label: 'Nostalgic Corner', emoji: '📜' },
+            { id: 'map', label: 'Neighborhood Map', emoji: '🗺️' },
+            { id: 'furry', label: 'Furry Friends', emoji: '🐾' },
+            { id: 'kitchen', label: 'Community Kitchen', emoji: '🍳' },
+            { id: 'slow', label: 'Slow Streams', emoji: '📺' },
+            { id: 'craft', label: 'Craft Guild', emoji: '🧶' }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => {
+                stablePress(() => {
+                  setActiveTab(tab.id as any);
+                  setSearchQuery('');
+                });
+              }}
+              className={cn(
+                'flex items-center gap-2 px-4 py-3 rounded-t-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border-t border-x',
+                activeTab === tab.id
+                  ? 'bg-slate-950 border-slate-800 text-teal-400 border-b-2 border-b-teal-400 shadow-[0_4px_15px_rgba(20,184,166,0.05)]'
+                  : 'bg-transparent border-transparent text-slate-500 hover:text-slate-300 hover:bg-slate-900/30'
+              )}
+            >
+              <span>{tab.emoji}</span>
+              <span>{tab.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* 3. DYNAMIC VIEWS CONTAINER */}
       <div className="w-full min-h-[400px]">
@@ -609,16 +894,18 @@ export default function AccessibleCurations({ currentUser }: AccessibleCurations
                       loading="lazy"
                     />
                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 backdrop-blur-sm transition-all duration-300 flex flex-col justify-center items-center gap-4 text-white p-4">
-                      <div className="flex gap-4">
-                        <div className="flex items-center gap-1">
-                          <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
-                          <span className="text-xs font-bold">{post.likesCount}</span>
+                      {!isQuietMode && (
+                        <div className="flex gap-4">
+                          <div className="flex items-center gap-1">
+                            <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
+                            <span className="text-xs font-bold">{post.likesCount}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <MessageSquare className="w-4 h-4 text-teal-400" />
+                            <span className="text-xs font-bold">{post.commentsCount}</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <MessageSquare className="w-4 h-4 text-teal-400" />
-                          <span className="text-xs font-bold">{post.commentsCount}</span>
-                        </div>
-                      </div>
+                      )}
                       <span className="text-[10px] font-bold text-teal-300">@{post.authorUsername}</span>
                     </div>
                   </div>
@@ -745,7 +1032,22 @@ export default function AccessibleCurations({ currentUser }: AccessibleCurations
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase">Write the Story</label>
+                  <div className="flex justify-between items-center">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase">Write the Story</label>
+                    <button
+                      type="button"
+                      onClick={() => startDictation((t) => setNewStoryText(prev => prev ? prev + " " + t : t))}
+                      className={cn(
+                        "flex items-center gap-1 px-2.5 py-1 rounded text-[10px] font-bold transition-all border cursor-pointer",
+                        isDictating 
+                          ? "bg-rose-500 border-rose-400 text-white animate-pulse" 
+                          : "bg-teal-500/10 border-teal-500/20 text-teal-400 hover:bg-teal-500/20"
+                      )}
+                    >
+                      <Mic className="w-3 h-3" />
+                      <span>{isDictating ? "Listening..." : "Dictate Story Voice 🎙️"}</span>
+                    </button>
+                  </div>
                   <textarea
                     required
                     rows={4}
@@ -1601,7 +1903,7 @@ export default function AccessibleCurations({ currentUser }: AccessibleCurations
                   </div>
 
                   {/* Comment submit form */}
-                  <form onSubmit={handleSendStreamComment} className="flex gap-2">
+                  <form onSubmit={handleSendStreamComment} className="flex gap-2 items-center">
                     <input
                       type="text"
                       required
@@ -1610,6 +1912,19 @@ export default function AccessibleCurations({ currentUser }: AccessibleCurations
                       placeholder="Say something nice..."
                       className="flex-1 bg-slate-900 border border-slate-850 text-[11px] text-slate-200 px-3 py-2 rounded outline-none focus:border-teal-500/50"
                     />
+                    <button
+                      type="button"
+                      onClick={() => startDictation((t) => setNewStreamComment(prev => prev ? prev + " " + t : t))}
+                      className={cn(
+                        "p-2 rounded border cursor-pointer",
+                        isDictating 
+                          ? "bg-rose-500 border-rose-400 text-white animate-pulse" 
+                          : "bg-slate-900 border-slate-800 text-teal-400 hover:bg-slate-800"
+                      )}
+                      title="Speak comment voice dictation 🎙️"
+                    >
+                      <Mic className="w-3.5 h-3.5" />
+                    </button>
                     <button
                       type="submit"
                       className="bg-teal-600 hover:bg-teal-500 text-stone-950 font-bold text-[11px] px-3 py-2 rounded cursor-pointer"
