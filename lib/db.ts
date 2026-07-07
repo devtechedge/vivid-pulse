@@ -169,6 +169,10 @@ export interface DatabaseState {
   neighborhoodSounds?: { id: string; userId: string; title: string; audioDataUrl?: string; createdAt: string }[];
   safeRooms?: SafeRoom[];
   safeRoomMessages?: SafeRoomMessage[];
+  receivedExpressions?: { id: string; senderId: string; senderUsername: string; receiverId: string; receiverUsername: string; type: string; createdAt: string }[];
+  gratitudeNotes?: { id: string; senderId: string; senderUsername: string; receiverId: string; receiverUsername: string; text: string; createdAt: string }[];
+  userRoles?: { userId: string; role: string }[];
+  interactionStreaks?: { userId1: string; userId2: string; count: number; lastInteractedAt: string }[];
 }
 
 // --- SECURE CRYPTOGRAPHY UTILITY (WEB CRYPTO) ---
@@ -464,6 +468,31 @@ const getInitialSeedData = async (): Promise<DatabaseState> => {
     { id: 'sound-2', userId: 'user-3', title: 'Chirping courtyard swallows 🐦', audioDataUrl: 'simulated_birds', createdAt: new Date(Date.now() - 50 * 60 * 1000).toISOString() },
   ];
 
+  const receivedExpressions = [
+    { id: 'expr-1', senderId: 'user-2', senderUsername: 'elena_pixels', receiverId: 'user-1', receiverUsername: 'alex_vivid', type: 'cocoa', createdAt: new Date(Date.now() - 2 * 3600 * 1000).toISOString() },
+    { id: 'expr-2', senderId: 'user-3', senderUsername: 'cyber_pulse', receiverId: 'user-1', receiverUsername: 'alex_vivid', type: 'blanket', createdAt: new Date(Date.now() - 1 * 3600 * 1000).toISOString() },
+    { id: 'expr-3', senderId: 'user-5', senderUsername: 'kinetic_art', receiverId: 'user-2', receiverUsername: 'elena_pixels', type: 'pie', createdAt: new Date(Date.now() - 4 * 3600 * 1000).toISOString() },
+    { id: 'expr-4', senderId: 'user-1', senderUsername: 'alex_vivid', receiverId: 'user-3', receiverUsername: 'cyber_pulse', type: 'teddy', createdAt: new Date(Date.now() - 5 * 3600 * 1000).toISOString() },
+  ];
+
+  const gratitudeNotes = [
+    { id: 'note-1', senderId: 'user-1', senderUsername: 'alex_vivid', receiverId: 'user-2', receiverUsername: 'elena_pixels', text: 'Thank you Elena for scouting that incredible alleyway for our photoshoot! You have an amazing eye for lights. 📸✨', createdAt: new Date(Date.now() - 2 * 3600 * 1000).toISOString() },
+    { id: 'note-2', senderId: 'user-3', senderUsername: 'cyber_pulse', receiverId: 'user-5', receiverUsername: 'kinetic_art', text: 'Marcus loved those blueberry muffins! Thanks for sweetening up our study session, Lucas. 🧁🙏', createdAt: new Date(Date.now() - 1 * 3600 * 1000).toISOString() },
+  ];
+
+  const userRoles = [
+    { userId: 'user-1', role: 'Quiet Dreamer 🌙' },
+    { userId: 'user-2', role: 'Symphonist 🎵' },
+    { userId: 'user-3', role: 'Stroll Organizer 👟' },
+    { userId: 'user-4', role: 'Kind Helper 🤝' },
+    { userId: 'user-5', role: 'Cozy Baker 🥖' },
+  ];
+
+  const interactionStreaks = [
+    { userId1: 'user-1', userId2: 'user-2', count: 4, lastInteractedAt: new Date().toISOString() },
+    { userId1: 'user-1', userId2: 'user-3', count: 2, lastInteractedAt: new Date().toISOString() },
+  ];
+
   return {
     users,
     posts,
@@ -483,6 +512,10 @@ const getInitialSeedData = async (): Promise<DatabaseState> => {
     wisdomReflections,
     helpingHandPosts,
     neighborhoodSounds,
+    receivedExpressions,
+    gratitudeNotes,
+    userRoles,
+    interactionStreaks,
   };
 };
 

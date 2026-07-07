@@ -1809,3 +1809,133 @@ export async function deleteSafeRoomMessage(messageId: string) {
   }
   return { success: false, error: 'Message not found' };
 }
+
+// --- BATCH 5: HEARTWARMING EXPRESSIONS & INTERACTION BADGES ACTIONS ---
+
+export async function getReceivedExpressions(userId?: string) {
+  const db = await getDB();
+  let targetUserId = userId;
+  if (!targetUserId) {
+    const currentUser = await getCurrentUser();
+    if (!currentUser) return [];
+    targetUserId = currentUser.id;
+  }
+  
+  if (!db.receivedExpressions) return [];
+  return db.receivedExpressions.filter(e => e.receiverId === targetUserId);
+}
+
+export async function sendHeartwarmingExpression(receiverId: string, type: string) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Unauthorized' };
+
+  const db = await getDB();
+  if (!db.receivedExpressions) db.receivedExpressions = [];
+  if (!db.interactionStreaks) db.interactionStreaks = [];
+
+  const receiver = db.users.find(u => u.id === receiverId);
+  if (!receiver) return { success: false, error: 'Recipient not found' };
+
+  // 1. Save new expression gift
+  const newExpr = {
+    id: `expr-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+    senderId: currentUser.id,
+    senderUsername: currentUser.username,
+    receiverId: receiverId,
+    receiverUsername: receiver.username,
+    type,
+    createdAt: new Date().toISOString()
+  };
+  db.receivedExpressions.push(newExpr);
+
+  // 2. Update interaction streaks
+  const u1 = currentUser.id;
+  const u2 = receiverId;
+  const existingStreak = db.interactionStreaks.find(s => 
+    (s.userId1 === u1 && s.userId2 === u2) || (s.userId1 === u2 && s.userId2 === u1)
+  );
+
+  if (existingStreak) {
+    existingStreak.count = (existingStreak.count || 0) + 1;
+    existingStreak.lastInteractedAt = new Date().toISOString();
+  } else {
+    db.interactionStreaks.push({
+      userId1: u1,
+      userId2: u2,
+      count: 1,
+      lastInteractedAt: new Date().toISOString()
+    });
+  }
+
+  await saveDB(db);
+  return { success: true, expression: newExpr };
+}
+
+export async function getGratitudeNotes() {
+  const db = await getDB();
+  return db.gratitudeNotes || [];
+}
+
+export async function createGratitudeNote(receiverId: string, text: string) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Unauthorized' };
+
+  const db = await getDB();
+  if (!db.gratitudeNotes) db.gratitudeNotes = [];
+
+  const receiver = db.users.find(u => u.id === receiverId);
+  if (!receiver) return { success: false, error: 'Recipient not found' };
+
+  const newNote = {
+    id: `note-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+    senderId: currentUser.id,
+    senderUsername: currentUser.username,
+    receiverId: receiverId,
+    receiverUsername: receiver.username,
+    text: text.trim(),
+    createdAt: new Date().toISOString()
+  };
+
+  db.gratitudeNotes.push(newNote);
+  await saveDB(db);
+
+  return { success: true, note: newNote };
+}
+
+export async function getUserRoles() {
+  const db = await getDB();
+  return db.userRoles || [];
+}
+
+export async function updateUserRole(role: string) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Unauthorized' };
+
+  const db = await getDB();
+  if (!db.userRoles) db.userRoles = [];
+
+  const existingRole = db.userRoles.find(r => r.userId === currentUser.id);
+  if (existingRole) {
+    existingRole.role = role;
+  } else {
+    db.userRoles.push({
+      userId: currentUser.id,
+      role: role
+    });
+  }
+
+  await saveDB(db);
+  return { success: true, role };
+}
+
+export async function getInteractionStreaks() {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return [];
+
+  const db = await getDB();
+  if (!db.interactionStreaks) return [];
+
+  return db.interactionStreaks.filter(s => 
+    s.userId1 === currentUser.id || s.userId2 === currentUser.id
+  );
+}

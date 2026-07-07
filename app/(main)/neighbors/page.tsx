@@ -4,7 +4,8 @@ import * as React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Coffee, Users, Smile, Heart, MapPin, Radio, Sparkles, Send, Plus, Loader2, 
-  Music, Check, HelpCircle, Sunset, Sun, Eye, ChevronRight, MessageSquare 
+  Music, Check, HelpCircle, Sunset, Sun, Eye, ChevronRight, MessageSquare,
+  Gift, Flame, Award, Sparkle
 } from 'lucide-react';
 import { 
   getNeighbors, sendNeighborNudge, updateNeighborMood, 
@@ -15,10 +16,32 @@ import {
   getWisdomReflections, createWisdomReflection,
   getHelpingHandPosts, createHelpingHandPost,
   getNeighborhoodSounds, createNeighborhoodSound,
-  getCurrentUser
+  getCurrentUser,
+  getReceivedExpressions, sendHeartwarmingExpression,
+  getGratitudeNotes, createGratitudeNote,
+  getUserRoles, updateUserRole, getInteractionStreaks
 } from '@/lib/actions';
 import { User as UserType } from '@/lib/db';
 import { cn } from '@/lib/utils';
+
+// --- BATCH 5 UTILITY: VIBE HARMONY CALCULATOR ---
+const calculateHarmony = (user1Vibe: string, user2Vibe: string, user1Name: string, user2Name: string) => {
+  if (user1Vibe === user2Vibe) return { score: 100, label: 'Perfect Harmony ✨' };
+  const combinedVibes = [user1Vibe, user2Vibe].sort().join('');
+  if (combinedVibes.includes('☕') && combinedVibes.includes('🍪')) return { score: 98, label: 'Coffee & Cookie Pairing ☕🍪' };
+  if (combinedVibes.includes('☕') && combinedVibes.includes('🥧')) return { score: 97, label: 'Sweet Treat & Coffee Pairing ☕🥧' };
+  if (combinedVibes.includes('📸') && combinedVibes.includes('🎨')) return { score: 95, label: 'Artistic Resonance 🎨📸' };
+  if (combinedVibes.includes('🚶‍♀️') && combinedVibes.includes('☕')) return { score: 92, label: 'Morning Stroll & Brew Pairing 🚶‍♀️☕' };
+  if (combinedVibes.includes('☕') && combinedVibes.includes('☕')) return { score: 99, label: 'Warm Brew Club ☕' };
+
+  // Fallback stable compatibility score
+  const combinedStr = user1Name + user2Name;
+  const charCodeSum = combinedStr.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const score = 75 + (charCodeSum % 21); // between 75 and 95
+  const labels = ['Kindred Souls ✨', 'Cozy Resonance 🌸', 'Warm Connection 🧸', 'Peaceful Resonance 🍃', 'Cheerful Vibe 🌟'];
+  const label = labels[charCodeSum % labels.length];
+  return { score, label };
+};
 
 export default function CozyNeighborsPage() {
   const [currentUser, setCurrentUser] = React.useState<UserType | null>(null);
@@ -74,6 +97,18 @@ export default function CozyNeighborsPage() {
 
   // Soundscape Playing State (Feature 10)
   const [playingSoundId, setPlayingSoundId] = React.useState<string | null>(null);
+
+  // --- BATCH 5 STATE VARIABLES ---
+  const [receivedExprs, setReceivedExprs] = React.useState<any[]>([]);
+  const [gratitudeNotes, setGratitudeNotesState] = React.useState<any[]>([]);
+  const [userRoles, setUserRolesState] = React.useState<any[]>([]);
+  const [interactionStreaks, setInteractionStreaksState] = React.useState<any[]>([]);
+  const [currentRole, setCurrentRole] = React.useState<string>('Quiet Dreamer 🌙');
+  const [newGratitudeText, setNewGratitudeText] = React.useState('');
+  const [newGratitudeReceiverId, setNewGratitudeReceiverId] = React.useState('');
+  const [isPostingGratitude, setIsPostingGratitude] = React.useState(false);
+  const [showingRoleSelector, setShowingRoleSelector] = React.useState(false);
+  const [customAppreciationCard, setCustomAppreciationCard] = React.useState<{ sender: string; receiver: string; message: string; theme: string } | null>(null);
 
   // Web Audio refs for neighborhood soundscapes
   const audioCtxRef = React.useRef<AudioContext | null>(null);
@@ -326,17 +361,19 @@ export default function CozyNeighborsPage() {
   }, []);
 
   // Selected Hub Tab
-  const [activeTab, setActiveTab] = React.useState<'board' | 'strolls' | 'sky' | 'kitchen' | 'wisdom' | 'kindness' | 'sounds'>('board');
+  const [activeTab, setActiveTab] = React.useState<'board' | 'strolls' | 'sky' | 'kitchen' | 'wisdom' | 'kindness' | 'sounds' | 'gratitude'>('board');
 
   const loadAllData = async () => {
     try {
       const [
         userRes, neighborsRes, bulletinsRes, strollsRes, 
-        skyRes, treatsRes, wisdomRes, helpsRes, soundsRes
+        skyRes, treatsRes, wisdomRes, helpsRes, soundsRes,
+        receivedExprsRes, gratitudeRes, rolesRes, streaksRes
       ] = await Promise.all([
         getCurrentUser(), getNeighbors(), getBulletins(), getCozyStrolls(),
         getSkySnapshots(), getCookieJarTreats(), getWisdomReflections(), 
-        getHelpingHandPosts(), getNeighborhoodSounds()
+        getHelpingHandPosts(), getNeighborhoodSounds(),
+        getReceivedExpressions(), getGratitudeNotes(), getUserRoles(), getInteractionStreaks()
       ]);
 
       setCurrentUser(userRes);
@@ -348,12 +385,20 @@ export default function CozyNeighborsPage() {
       setWisdom(wisdomRes);
       setHelps(helpsRes);
       setSounds(soundsRes);
+      setReceivedExprs(receivedExprsRes || []);
+      setGratitudeNotesState(gratitudeRes || []);
+      setUserRolesState(rolesRes || []);
+      setInteractionStreaksState(streaksRes || []);
 
       if (userRes) {
         const myMood = neighborsRes.find(n => n.id === userRes.id);
         if (myMood) {
           setMyVibeEmoji(myMood.vibeEmoji);
           setMyVibeLabel(myMood.vibeLabel);
+        }
+        const myRoleObj = rolesRes?.find((r: any) => r.userId === userRes.id);
+        if (myRoleObj) {
+          setCurrentRole(myRoleObj.role);
         }
       }
     } catch (err) {
@@ -404,6 +449,115 @@ export default function CozyNeighborsPage() {
         return n;
       }));
     }
+  };
+
+  // --- BATCH 5 HELPER METHODS ---
+  const playAppreciationChime = () => {
+    try {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContextClass) return;
+      const ctx = new AudioContextClass();
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+      osc1.frequency.exponentialRampToValueAtTime(783.99, ctx.currentTime + 0.3); // G5
+
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(659.25, ctx.currentTime); // E5
+      osc2.frequency.exponentialRampToValueAtTime(1046.50, ctx.currentTime + 0.3); // C6
+
+      gainNode.gain.setValueAtTime(0.12, ctx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
+
+      osc1.connect(gainNode);
+      osc2.connect(gainNode);
+      gainNode.connect(ctx.destination);
+
+      osc1.start();
+      osc2.start();
+      osc1.stop(ctx.currentTime + 0.8);
+      osc2.stop(ctx.currentTime + 0.8);
+    } catch (e) {
+      console.warn("Appreciation chime play failed", e);
+    }
+  };
+
+  const handleSendExpression = async (receiverId: string, type: 'blanket' | 'cocoa' | 'clover' | 'candle' | 'pie' | 'teddy', e: React.MouseEvent) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top;
+
+    const expressionEmojis = {
+      blanket: '🧣',
+      cocoa: '☕',
+      clover: '🍀',
+      candle: '🕯️',
+      pie: '🥧',
+      teddy: '🧸'
+    };
+    const emoji = expressionEmojis[type];
+
+    // Spawn 6 floating emoji particles
+    const newParticles = Array.from({ length: 6 }).map((_, i) => {
+      const offset = Math.random() * 40 - 20;
+      return {
+        id: Date.now() + i + Math.random(),
+        emoji,
+        x: x + (Math.random() * 80 - 40),
+        y: y - (Math.random() * 40 + 20),
+        targetX: x + offset
+      };
+    });
+
+    setActiveParticles(prev => [...prev, ...newParticles]);
+    setTimeout(() => {
+      setActiveParticles(prev => prev.filter(p => !newParticles.find(np => np.id === p.id)));
+    }, 1500);
+
+    // Play sweet audio chime
+    playAppreciationChime();
+
+    const res = await sendHeartwarmingExpression(receiverId, type);
+    if (res.success) {
+      // Reload roles, expressions, streaks, and neighbor counts
+      const [updatedExprs, updatedStreaks, updatedNeighbors] = await Promise.all([
+        getReceivedExpressions(),
+        getInteractionStreaks(),
+        getNeighbors()
+      ]);
+      setReceivedExprs(updatedExprs);
+      setInteractionStreaksState(updatedStreaks);
+      setNeighbors(updatedNeighbors);
+    }
+  };
+
+  const handleUpdateRole = async (role: string) => {
+    const res = await updateUserRole(role);
+    if (res.success) {
+      setCurrentRole(role);
+      const updatedRoles = await getUserRoles();
+      setUserRolesState(updatedRoles);
+      setShowingRoleSelector(false);
+      playAppreciationChime();
+    }
+  };
+
+  const handlePostGratitude = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newGratitudeText.trim() || !newGratitudeReceiverId) return;
+    setIsPostingGratitude(true);
+    const res = await createGratitudeNote(newGratitudeReceiverId, newGratitudeText);
+    if (res.success) {
+      setNewGratitudeText('');
+      setNewGratitudeReceiverId('');
+      const updated = await getGratitudeNotes();
+      setGratitudeNotesState(updated);
+      playAppreciationChime();
+    }
+    setIsPostingGratitude(false);
   };
 
   // 2. Local Mood Badges update
@@ -586,35 +740,52 @@ export default function CozyNeighborsPage() {
 
         {/* CURRENT USER VIBE UPDATE CARD */}
         {currentUser && (
-          <div className="bg-slate-950 p-4 rounded border border-slate-900 w-full md:max-w-xs flex flex-col gap-2.5">
-            <div className="flex items-center gap-2">
-              <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Set My Daily Vibe:</span>
+          <div className="bg-slate-950 p-4 rounded border border-slate-900 w-full md:max-w-md flex flex-col gap-3">
+            <div className="flex flex-col md:flex-row gap-4">
+              {/* Vibe update column */}
+              <div className="flex-1 flex flex-col gap-1.5">
+                <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Set My Daily Vibe:</span>
+                <form onSubmit={handleUpdateVibe} className="flex gap-2">
+                  <select
+                    value={myVibeEmoji}
+                    onChange={(e) => setMyVibeEmoji(e.target.value)}
+                    className="bg-slate-900 border border-slate-800 text-xs px-2 py-1.5 rounded outline-none focus:border-violet-500 cursor-pointer"
+                  >
+                    {['☕', '🌸', '🚶‍♀️', '📖', '☀️', '🍲', '🎨', '🧹', '🐈', '🧘‍♀️'].map(emoji => (
+                      <option key={emoji} value={emoji}>{emoji}</option>
+                    ))}
+                  </select>
+                  <input
+                    type="text"
+                    value={myVibeLabel}
+                    onChange={(e) => setMyVibeLabel(e.target.value.substring(0, 30))}
+                    placeholder="What are you up to?"
+                    className="flex-1 bg-slate-900/60 border border-slate-800 text-[11px] text-slate-200 px-3 py-1.5 rounded outline-none placeholder:text-slate-600 focus:border-violet-500 focus:bg-slate-900"
+                  />
+                  <button
+                    type="submit"
+                    disabled={isUpdatingVibe}
+                    className="px-2.5 py-1.5 bg-violet-600 hover:bg-violet-500 text-white rounded text-[10px] font-bold uppercase cursor-pointer"
+                  >
+                    {isUpdatingVibe ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Set'}
+                  </button>
+                </form>
+              </div>
+
+              {/* Role badge update column */}
+              <div className="flex-1 flex flex-col gap-1.5 border-t md:border-t-0 md:border-l border-slate-900 md:pl-4 pt-2.5 md:pt-0">
+                <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">My Neighborhood Role:</span>
+                <select
+                  value={currentRole}
+                  onChange={(e) => handleUpdateRole(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-800 text-xs px-2.5 py-1.5 rounded outline-none focus:border-violet-500 cursor-pointer text-slate-200 font-medium"
+                >
+                  {['Quiet Dreamer 🌙', 'Symphonist 🎵', 'Stroll Organizer 👟', 'Kind Helper 🤝', 'Cozy Baker 🥖'].map(role => (
+                    <option key={role} value={role}>{role}</option>
+                  ))}
+                </select>
+              </div>
             </div>
-            <form onSubmit={handleUpdateVibe} className="flex gap-2">
-              <select
-                value={myVibeEmoji}
-                onChange={(e) => setMyVibeEmoji(e.target.value)}
-                className="bg-slate-900 border border-slate-800 text-xs px-2 py-1.5 rounded outline-none focus:border-violet-500 cursor-pointer"
-              >
-                {['☕', '🌸', '🚶‍♀️', '📖', '☀️', '🍲', '🎨', '🧹', '🐈', '🧘‍♀️'].map(emoji => (
-                  <option key={emoji} value={emoji}>{emoji}</option>
-                ))}
-              </select>
-              <input
-                type="text"
-                value={myVibeLabel}
-                onChange={(e) => setMyVibeLabel(e.target.value.substring(0, 30))}
-                placeholder="What are you up to today?"
-                className="flex-1 bg-slate-900/60 border border-slate-800 text-[11px] text-slate-200 px-3 py-1.5 rounded outline-none placeholder:text-slate-600 focus:border-violet-500 focus:bg-slate-900"
-              />
-              <button
-                type="submit"
-                disabled={isUpdatingVibe}
-                className="px-2.5 py-1.5 bg-violet-600 hover:bg-violet-500 text-white rounded text-[10px] font-bold uppercase cursor-pointer"
-              >
-                {isUpdatingVibe ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Set'}
-              </button>
-            </form>
           </div>
         )}
       </div>
@@ -628,6 +799,25 @@ export default function CozyNeighborsPage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
           {neighbors.map(n => {
             const isMe = currentUser ? currentUser.id === n.id : false;
+
+            // Fetch neighbor role badge
+            const neighborRoleObj = userRoles.find(r => r.userId === n.id);
+            const neighborRole = neighborRoleObj?.role || 'Quiet Dreamer 🌙';
+
+            // Fetch interaction streak
+            const streakObj = interactionStreaks.find(s => 
+              (s.userId1 === currentUser?.id && s.userId2 === n.id) || 
+              (s.userId1 === n.id && s.userId2 === currentUser?.id)
+            );
+            const streakCount = streakObj?.count || 0;
+
+            // Calculate Vibe compatibility
+            const harmony = calculateHarmony(
+              myVibeEmoji || '☕', 
+              n.vibeEmoji || '☕', 
+              currentUser?.username || '', 
+              n.username || ''
+            );
 
             return (
               <div 
@@ -650,13 +840,25 @@ export default function CozyNeighborsPage() {
                 <div className="flex flex-col leading-tight mt-1 max-w-full">
                   <span className="text-[11px] font-bold text-slate-200 truncate">{n.displayName}</span>
                   <span className="text-[9px] text-teal-400 font-medium truncate mt-0.5">@{n.username}</span>
+                  {/* Cozy Role Badge */}
+                  <span className="text-[9px] text-violet-400 font-semibold tracking-wide bg-violet-950/20 px-1.5 py-0.5 border border-violet-900/40 rounded mt-1 truncate">
+                    {neighborRole}
+                  </span>
                 </div>
 
-                <div className="bg-slate-950 px-2.5 py-1 rounded border border-slate-900/60 max-w-full">
+                <div className="bg-slate-950 px-2.5 py-1 rounded border border-slate-900/60 w-full">
                   <span className="text-[10px] text-slate-400 italic font-sans break-words block">
                     {n.vibeLabel || '"Just relaxing"'}
                   </span>
                 </div>
+
+                {/* Vibe Harmony Compatibility Badge */}
+                {!isMe && (
+                  <div className="flex items-center gap-1 text-[8px] font-semibold text-teal-400 bg-teal-500/5 border border-teal-500/20 px-1.5 py-0.5 rounded-sm" title={harmony.label}>
+                    <Sparkle className="w-2.5 h-2.5 text-teal-300 animate-spin" style={{ animationDuration: '6s' }} />
+                    <span>{harmony.score}% Harmony</span>
+                  </div>
+                )}
 
                 {/* React Greetings Drawer (Hidden for self) */}
                 {!isMe ? (
@@ -687,6 +889,40 @@ export default function CozyNeighborsPage() {
                   <span className="text-[8px] font-bold text-violet-500/60 uppercase mt-2">That is You!</span>
                 )}
 
+                {/* Heartwarming Expressions Panel (Hidden for self) */}
+                {!isMe && (
+                  <div className="flex flex-col gap-1 w-full border-t border-slate-900/40 pt-2 mt-1">
+                    <span className="text-[8px] font-bold uppercase tracking-wider text-slate-500 block">Send Expression:</span>
+                    <div className="grid grid-cols-6 gap-0.5 justify-center">
+                      {[
+                        { type: 'blanket', emoji: '🧣', label: 'Blanket' },
+                        { type: 'cocoa', emoji: '☕', label: 'Cocoa' },
+                        { type: 'clover', emoji: '🍀', label: 'Clover' },
+                        { type: 'candle', emoji: '🕯️', label: 'Candle' },
+                        { type: 'pie', emoji: '🥧', label: 'Pie' },
+                        { type: 'teddy', emoji: '🧸', label: 'Teddy' }
+                      ].map(expr => (
+                        <button
+                          key={expr.type}
+                          onClick={(e) => handleSendExpression(n.id, expr.type as any, e)}
+                          title={`Send ${expr.label} ${expr.emoji}`}
+                          className="p-1 hover:bg-violet-600/20 hover:scale-110 active:scale-95 rounded text-[12px] transition-all cursor-pointer"
+                        >
+                          {expr.emoji}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Streak Badge */}
+                {streakCount > 0 && (
+                  <div className="absolute top-2 left-2 flex items-center gap-1 text-[8px] font-bold bg-orange-500/10 text-orange-400 border border-orange-500/20 px-1.5 py-0.5 rounded-sm" title="Interaction Streak! Keep interacting to level up.">
+                    <Flame className="w-2.5 h-2.5 fill-orange-500 text-orange-500 animate-pulse" />
+                    <span>{streakCount}</span>
+                  </div>
+                )}
+
                 {/* Total Nudges Tracker */}
                 {n.totalNudgesReceived > 0 && (
                   <div className="absolute top-2 right-2 flex items-center gap-1 text-[8px] font-semibold bg-violet-600/10 text-violet-400 border border-violet-500/20 px-1.5 py-0.5 rounded-full">
@@ -711,7 +947,8 @@ export default function CozyNeighborsPage() {
             { id: 'sky', label: '☁️ Sky Window', color: 'text-sky-400 border-sky-500' },
             { id: 'wisdom', label: '📜 Wisdom Corner', color: 'text-violet-400 border-violet-500' },
             { id: 'kindness', label: '🤝 Helping Hands', color: 'text-teal-400 border-teal-500' },
-            { id: 'sounds', label: '🎧 Local Hums', color: 'text-indigo-400 border-indigo-500' }
+            { id: 'sounds', label: '🎧 Local Hums', color: 'text-indigo-400 border-indigo-500' },
+            { id: 'gratitude', label: '💖 Community Gratitude', color: 'text-pink-400 border-pink-500' }
           ].map(tab => (
             <button
               key={tab.id}
@@ -1425,6 +1662,101 @@ export default function CozyNeighborsPage() {
                     </div>
                   );
                 })}
+              </div>
+            </div>
+          )}
+
+          {/* TAB H: COMMUNITY GRATITUDE BOARD */}
+          {activeTab === 'gratitude' && (
+            <div className="flex flex-col gap-6">
+              <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
+                <div className="flex flex-col">
+                  <h3 className="text-sm font-bold text-pink-400 flex items-center gap-1.5">
+                    💖 Community Gratitude Board
+                  </h3>
+                  <span className="text-[10px] text-slate-500 font-sans mt-0.5">
+                    A dedicated cozy space to publicly thank your lovely neighbors for their sweet gestures, claimed cookie jars, or helpful strolls!
+                  </span>
+                </div>
+
+                {/* Gratitude post Form */}
+                <form onSubmit={handlePostGratitude} className="bg-slate-950 p-4 rounded border border-slate-900 w-full md:max-w-md flex flex-col gap-3">
+                  <span className="text-[9px] font-bold uppercase text-slate-400">Write a note of appreciation:</span>
+                  <div className="flex flex-col gap-2">
+                    <select
+                      required
+                      value={newGratitudeReceiverId}
+                      onChange={(e) => setNewGratitudeReceiverId(e.target.value)}
+                      className="bg-slate-900 border border-slate-800 text-[11px] px-3 py-1.5 rounded outline-none cursor-pointer focus:border-pink-500 text-slate-200"
+                    >
+                      <option value="">Select a neighbor to thank...</option>
+                      {neighbors.filter(n => currentUser ? n.id !== currentUser.id : true).map(n => (
+                        <option key={n.id} value={n.id}>{n.displayName} (@{n.username})</option>
+                      ))}
+                    </select>
+                    
+                    <textarea
+                      required
+                      value={newGratitudeText}
+                      onChange={(e) => setNewGratitudeText(e.target.value.substring(0, 250))}
+                      placeholder="Thank you for..."
+                      rows={2.5}
+                      className="w-full bg-slate-900 border border-slate-800 text-[11px] text-slate-200 px-3 py-1.5 rounded outline-none focus:border-pink-500 placeholder:text-slate-600 resize-none"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={isPostingGratitude}
+                    className="w-full bg-pink-600 hover:bg-pink-500 text-white text-[10px] font-bold uppercase rounded py-2 tracking-wider cursor-pointer transition-colors"
+                  >
+                    {isPostingGratitude ? <Loader2 className="w-3.5 h-3.5 animate-spin mx-auto" /> : 'Pin My Gratitude 💖'}
+                  </button>
+                </form>
+              </div>
+
+              {/* GRATITUDE NOTES WALL */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {gratitudeNotes.length === 0 ? (
+                  <div className="col-span-full py-12 text-center text-xs text-slate-600 italic">No notes pinned yet. Be the first to spread some love!</div>
+                ) : (
+                  gratitudeNotes.map(note => {
+                    const randomColorClasses = [
+                      'bg-pink-950/20 border-pink-900/40 hover:border-pink-500/40 shadow-[0_4px_10px_rgba(244,114,182,0.02)]',
+                      'bg-violet-950/20 border-violet-900/40 hover:border-violet-500/40 shadow-[0_4px_10px_rgba(139,92,246,0.02)]',
+                      'bg-rose-950/20 border-rose-900/40 hover:border-rose-500/40 shadow-[0_4px_10px_rgba(251,113,133,0.02)]'
+                    ];
+                    const colorClass = randomColorClasses[note.text.length % randomColorClasses.length];
+
+                    return (
+                      <div 
+                        key={note.id} 
+                        className={cn(
+                          "border p-5 rounded flex flex-col justify-between gap-4 transition-all relative overflow-hidden group",
+                          colorClass
+                        )}
+                      >
+                        {/* Decorative tape on top */}
+                        <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-12 h-3.5 bg-white/5 border-x border-b border-white/10 rotate-1 transform shadow-sm" />
+
+                        <div className="flex flex-col gap-2.5 mt-2">
+                          <div className="flex items-center justify-between gap-2 border-b border-slate-900/60 pb-2">
+                            <span className="text-[10px] font-bold text-pink-400">To: @{note.receiverUsername}</span>
+                            <span className="text-[8px] font-medium text-slate-500 uppercase tracking-widest">Post-It note</span>
+                          </div>
+
+                          <p className="text-[11px] text-slate-300 leading-relaxed font-sans break-words whitespace-pre-wrap">
+                            {note.text}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center justify-between border-t border-slate-900/60 pt-2 text-[9px]">
+                          <span className="text-[9px] text-slate-400 font-semibold">From: @{note.senderUsername}</span>
+                          <span className="text-[8px] text-slate-500">{new Date(note.createdAt).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </div>
           )}
