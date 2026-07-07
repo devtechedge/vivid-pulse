@@ -182,6 +182,72 @@ export interface DatabaseState {
   soundAlbums?: SoundAlbum[];
   leatherDiaryEntries?: LeatherDiaryEntry[];
   timeCapsuleJars?: TimeCapsuleJar[];
+  nostalgicStories?: NostalgicStory[];
+  neighborhoodBenches?: NeighborhoodBench[];
+  furryFriendPets?: FurryFriendPet[];
+  communityKitchenRecipes?: CommunityKitchenRecipe[];
+  craftingGuildProjects?: CraftingGuildProject[];
+}
+
+export interface NostalgicStory {
+  id: string;
+  userId: string;
+  title: string;
+  category: 'restoration' | 'gardening' | 'history' | 'crafts';
+  imageUrl: string;
+  storyText: string;
+  createdAt: string;
+}
+
+export interface NeighborhoodBench {
+  id: string;
+  userId: string;
+  title: string;
+  description: string;
+  type: 'park' | 'bird' | 'bench';
+  latitude: number; // For SVG map coordinates (percentage 0-100)
+  longitude: number; // For SVG map coordinates (percentage 0-100)
+  img50YearsAgo?: string;
+  imgToday?: string;
+  createdAt: string;
+}
+
+export interface FurryFriendPet {
+  id: string;
+  userId: string;
+  name: string;
+  type: 'dog' | 'cat' | 'rabbit' | 'bird';
+  imageUrl: string;
+  favoriteNapSpot: string;
+  pettedCount: number;
+  treatsCount: number;
+  createdAt: string;
+}
+
+export interface CommunityKitchenRecipe {
+  id: string;
+  userId: string;
+  title: string;
+  description: string;
+  coverImage: string;
+  ingredients: string[];
+  steps: { order: number; text: string; imageUrl: string }[];
+  createdAt: string;
+}
+
+export interface CraftingGuildProject {
+  id: string;
+  userId: string;
+  title: string;
+  category: 'knitting' | 'carpentry' | 'pottery' | 'painting';
+  creatorName: string;
+  creatorAge: number;
+  imageUrl: string;
+  patternOrTips: string;
+  progressText: string;
+  cheers: number;
+  encouragements: { id: string; authorName: string; text: string; createdAt: string }[];
+  createdAt: string;
 }
 
 export interface AtticKeepsake {
@@ -744,6 +810,191 @@ const getInitialSeedData = async (): Promise<DatabaseState> => {
     }
   ];
 
+  const nostalgicStories: NostalgicStory[] = [
+    {
+      id: 'nstory-1',
+      userId: 'user-1',
+      title: 'Restoring an 1890s Ansonia Grandfather Clock',
+      category: 'restoration',
+      imageUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&q=80&w=600',
+      storyText: 'Found this masterpiece in a dusty barn in Maine. The pendulum rod was rusted shut and the escape wheel was chipped. Spent three months gently polishing the solid oak casing with orange oil, and micro-soldering the gear pinions. Now, its hourly chime sounds like a resonant brass bell echoing across the hall.',
+      createdAt: new Date(Date.now() - 2 * 3600 * 1000).toISOString()
+    },
+    {
+      id: 'nstory-2',
+      userId: 'user-2',
+      title: 'Cultivating the Heritage "Apothecary" Rose',
+      category: 'gardening',
+      imageUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&q=80&w=600',
+      storyText: 'This rose variety dates back to the 13th century. It produces deep pink, semi-double petals with a heavy, spicy fragrance that modern roses have lost. I make rosewater and dry the petals for winter linen sachets just as my mother did.',
+      createdAt: new Date(Date.now() - 24 * 3600 * 1000).toISOString()
+    },
+    {
+      id: 'nstory-3',
+      userId: 'user-3',
+      title: 'The Great Elm under the Old Courthouse Square',
+      category: 'history',
+      imageUrl: 'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&q=80&w=600',
+      storyText: 'A historic snapshot of our town square back in 1948. People gathered beneath the shade of the great 200-year-old Elm, which unfortunately succumbed to Dutch Elm disease in the late seventies. It was the heart of the community, where the Saturday farmers market thrived.',
+      createdAt: new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString()
+    }
+  ];
+
+  const neighborhoodBenches: NeighborhoodBench[] = [
+    {
+      id: 'bench-1',
+      userId: 'user-1',
+      title: 'Whispering Willow Creek Park Bench',
+      description: 'Under the great willow tree right beside the stream. Best place to watch the mallard ducks and hear the bubbling water around 3:00 PM.',
+      type: 'bench',
+      latitude: 45,
+      longitude: 32,
+      img50YearsAgo: 'https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?auto=format&fit=crop&q=80&w=600',
+      imgToday: 'https://images.unsplash.com/photo-1502082553048-f009c37129b9?auto=format&fit=crop&q=80&w=600',
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: 'bench-2',
+      userId: 'user-2',
+      title: 'Sunset Crest Bird Sanctuary',
+      description: 'Features three beautiful handmade cedar benches. Perfect elevation to see bluebirds, finches, and the occasional sparrow hawk nested in the oak shrubs.',
+      type: 'bird',
+      latitude: 65,
+      longitude: 78,
+      img50YearsAgo: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&q=80&w=600',
+      imgToday: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&q=80&w=600',
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: 'bench-3',
+      userId: 'user-3',
+      title: 'Oakwood Historic Botanical Garden',
+      description: 'A magnificent garden with fully accessible brick walking paths, raised flowerbeds, and ironwork arches overflowing with lavender and honeysuckle.',
+      type: 'park',
+      latitude: 25,
+      longitude: 60,
+      img50YearsAgo: 'https://images.unsplash.com/photo-1508193638397-1c4234db14d8?auto=format&fit=crop&q=80&w=600',
+      imgToday: 'https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?auto=format&fit=crop&q=80&w=600',
+      createdAt: new Date().toISOString()
+    }
+  ];
+
+  const furryFriendPets: FurryFriendPet[] = [
+    {
+      id: 'pet-1',
+      userId: 'user-1',
+      name: 'Barnaby',
+      type: 'dog',
+      imageUrl: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&q=80&w=500',
+      favoriteNapSpot: 'The patch of warm afternoon sun on the living room wool rug.',
+      pettedCount: 24,
+      treatsCount: 15,
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: 'pet-2',
+      userId: 'user-2',
+      name: 'Mr. Fluffington',
+      type: 'cat',
+      imageUrl: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&q=80&w=500',
+      favoriteNapSpot: 'Cozying up directly on top of the fresh warm laundry straight from the dryer.',
+      pettedCount: 42,
+      treatsCount: 18,
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: 'pet-3',
+      userId: 'user-3',
+      name: 'Hazel & Pip',
+      type: 'bird',
+      imageUrl: 'https://images.unsplash.com/photo-1452570053594-1b985d6ea890?auto=format&fit=crop&q=80&w=500',
+      favoriteNapSpot: 'Standing close together on the willow branch outside the kitchen window.',
+      pettedCount: 12,
+      treatsCount: 22,
+      createdAt: new Date().toISOString()
+    }
+  ];
+
+  const communityKitchenRecipes: CommunityKitchenRecipe[] = [
+    {
+      id: 'recipe-1',
+      userId: 'user-1',
+      title: 'Mrs. Higgins\' Sunday Apple Cobbler',
+      description: 'A deeply comforting dessert made with hand-sliced Granny Smith apples, dynamic cinnamon crumble, and a secret pinch of ground nutmeg.',
+      coverImage: 'https://images.unsplash.com/photo-1568569302499-1e177770aa09?auto=format&fit=crop&q=80&w=600',
+      ingredients: [
+        '6 cups sliced Granny Smith apples',
+        '1 cup raw organic sugar',
+        '1 tablespoon ground cinnamon',
+        '1 cup all-purpose sifted flour',
+        '1/2 cup cold salted butter',
+        'A pinch of freshly grated nutmeg'
+      ],
+      steps: [
+        { order: 1, text: 'Toss the sliced apples with sugar, cinnamon, and nutmeg, then spread evenly in a buttered baking dish.', imageUrl: 'https://images.unsplash.com/photo-1568569302499-1e177770aa09?auto=format&fit=crop&q=80&w=500' },
+        { order: 2, text: 'Cut the cold butter into the flour using a pastry cutter until the mixture resembles coarse breadcrumbs.', imageUrl: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&q=80&w=500' },
+        { order: 3, text: 'Sprinkle the crumble mixture over the apples and bake at 375°F (190°C) for 45 minutes until the topping is golden brown.', imageUrl: 'https://images.unsplash.com/photo-1519869325930-281384150729?auto=format&fit=crop&q=80&w=500' }
+      ],
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: 'recipe-2',
+      userId: 'user-2',
+      title: 'Grandpa Arthur\'s Slow-Simmered Beef Stew',
+      description: 'Rich, warming comfort bowl cooked over five hours on the woodstove with sweet root vegetables and deep rosemary broth.',
+      coverImage: 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&q=80&w=600',
+      ingredients: [
+        '2 lbs marbled beef chuck, cubed',
+        '4 large sweet carrots, thickly chopped',
+        '3 golden russet potatoes',
+        '1 large yellow onion, diced',
+        '4 cups rich bone broth',
+        '2 sprigs fresh mountain rosemary'
+      ],
+      steps: [
+        { order: 1, text: 'Sear the beef cubes in a cast iron Dutch oven with olive oil until beautifully browned on all sides.', imageUrl: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&q=80&w=500' },
+        { order: 2, text: 'Add carrots, potatoes, onions, bone broth, and tuck the rosemary sprigs into the center.', imageUrl: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&q=80&w=500' },
+        { order: 3, text: 'Cover and simmer on low heat for 4 hours until the beef is incredibly tender and melt-in-your-mouth.', imageUrl: 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&q=80&w=500' }
+      ],
+      createdAt: new Date().toISOString()
+    }
+  ];
+
+  const craftingGuildProjects: CraftingGuildProject[] = [
+    {
+      id: 'craft-1',
+      userId: 'user-1',
+      title: 'Winter Merino Wool Cable-Knit Socks',
+      category: 'knitting',
+      creatorName: 'Eleanor Higgins',
+      creatorAge: 72,
+      imageUrl: 'https://images.unsplash.com/photo-1584992236310-6edddc08acff?auto=format&fit=crop&q=80&w=500',
+      patternOrTips: 'Yarn: 100% Merino, Needles: US Size 2 double-pointed. Tip: Reinforce the heel flap with a slip-stitch pattern for extra durability!',
+      progressText: 'Finished the left heel turn today! Starting the foot length now. The pattern is coming together beautifully.',
+      cheers: 15,
+      encouragements: [
+        { id: 'enc-1', authorName: 'Arthur Vance', text: 'Those look incredibly warm and neat, Eleanor! Splendid needlework.', createdAt: new Date().toISOString() }
+      ],
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: 'craft-2',
+      userId: 'user-2',
+      title: 'Hand-Carved Mahogany Rocking Chair',
+      category: 'carpentry',
+      creatorName: 'Robert Vance',
+      creatorAge: 68,
+      imageUrl: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&q=80&w=500',
+      patternOrTips: 'Wood: Aged Mahogany. Technique: Mortise and tenon joinery. Sanded up to 400 grit for an ultra-smooth finish.',
+      progressText: 'Just finished applying the second coat of natural tung oil. The wood grain is shining with a deep, warm amber glow.',
+      cheers: 28,
+      encouragements: [
+        { id: 'enc-2', authorName: 'Sarah Jenkins', text: 'Stunning craftsmanship, Robert. This is a true heirloom piece!', createdAt: new Date().toISOString() }
+      ],
+      createdAt: new Date().toISOString()
+    }
+  ];
+
   return {
     users,
     posts,
@@ -776,6 +1027,11 @@ const getInitialSeedData = async (): Promise<DatabaseState> => {
     soundAlbums,
     leatherDiaryEntries,
     timeCapsuleJars,
+    nostalgicStories,
+    neighborhoodBenches,
+    furryFriendPets,
+    communityKitchenRecipes,
+    craftingGuildProjects,
   };
 };
 

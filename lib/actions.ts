@@ -2328,3 +2328,236 @@ export async function createTimeCapsuleJar(title: string, unlockDate: string, ph
   return { success: true, jar: newJar };
 }
 
+// ==========================================
+// BATCH 7: ACCESSIBLE CURATIONS & EXPLORATION PATHS ACTIONS
+// ==========================================
+
+import { NostalgicStory, NeighborhoodBench, FurryFriendPet, CommunityKitchenRecipe, CraftingGuildProject } from './db';
+
+// 1. Nostalgic Stories Actions
+export async function getNostalgicStories(): Promise<NostalgicStory[]> {
+  const db = await getDB();
+  if (!db.nostalgicStories) db.nostalgicStories = [];
+  return db.nostalgicStories.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
+export async function createNostalgicStory(title: string, category: 'restoration' | 'gardening' | 'history' | 'crafts', imageUrl: string, storyText: string) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Unauthorized' };
+
+  const db = await getDB();
+  if (!db.nostalgicStories) db.nostalgicStories = [];
+
+  const newStory: NostalgicStory = {
+    id: generateUUID(),
+    userId: currentUser.id,
+    title,
+    category,
+    imageUrl: imageUrl || 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&q=80&w=600',
+    storyText,
+    createdAt: new Date().toISOString()
+  };
+
+  db.nostalgicStories.push(newStory);
+  await saveDB(db);
+  return { success: true, story: newStory };
+}
+
+// 2. Neighborhood Benches Actions
+export async function getNeighborhoodBenches(): Promise<NeighborhoodBench[]> {
+  const db = await getDB();
+  if (!db.neighborhoodBenches) db.neighborhoodBenches = [];
+  return db.neighborhoodBenches;
+}
+
+export async function createNeighborhoodBench(
+  title: string, 
+  description: string, 
+  type: 'park' | 'bird' | 'bench', 
+  latitude: number, 
+  longitude: number, 
+  img50YearsAgo?: string, 
+  imgToday?: string
+) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Unauthorized' };
+
+  const db = await getDB();
+  if (!db.neighborhoodBenches) db.neighborhoodBenches = [];
+
+  const newBench: NeighborhoodBench = {
+    id: generateUUID(),
+    userId: currentUser.id,
+    title,
+    description,
+    type,
+    latitude,
+    longitude,
+    img50YearsAgo: img50YearsAgo || 'https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?auto=format&fit=crop&q=80&w=600',
+    imgToday: imgToday || 'https://images.unsplash.com/photo-1502082553048-f009c37129b9?auto=format&fit=crop&q=80&w=600',
+    createdAt: new Date().toISOString()
+  };
+
+  db.neighborhoodBenches.push(newBench);
+  await saveDB(db);
+  return { success: true, bench: newBench };
+}
+
+// 3. Furry Friends Hub Actions
+export async function getFurryFriendPets(): Promise<FurryFriendPet[]> {
+  const db = await getDB();
+  if (!db.furryFriendPets) db.furryFriendPets = [];
+  return db.furryFriendPets.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
+export async function createFurryFriendPet(name: string, type: 'dog' | 'cat' | 'rabbit' | 'bird', imageUrl: string, favoriteNapSpot: string) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Unauthorized' };
+
+  const db = await getDB();
+  if (!db.furryFriendPets) db.furryFriendPets = [];
+
+  const newPet: FurryFriendPet = {
+    id: generateUUID(),
+    userId: currentUser.id,
+    name,
+    type,
+    imageUrl: imageUrl || 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&q=80&w=500',
+    favoriteNapSpot,
+    pettedCount: 0,
+    treatsCount: 0,
+    createdAt: new Date().toISOString()
+  };
+
+  db.furryFriendPets.push(newPet);
+  await saveDB(db);
+  return { success: true, pet: newPet };
+}
+
+export async function interactWithPet(petId: string, actionType: 'pet' | 'treat') {
+  const db = await getDB();
+  if (!db.furryFriendPets) db.furryFriendPets = [];
+
+  const pet = db.furryFriendPets.find(p => p.id === petId);
+  if (!pet) return { success: false, error: 'Pet not found' };
+
+  if (actionType === 'pet') {
+    pet.pettedCount += 1;
+  } else {
+    pet.treatsCount += 1;
+  }
+
+  await saveDB(db);
+  return { success: true, pet };
+}
+
+// 4. Weekly Community Kitchen Actions
+export async function getCommunityKitchenRecipes(): Promise<CommunityKitchenRecipe[]> {
+  const db = await getDB();
+  if (!db.communityKitchenRecipes) db.communityKitchenRecipes = [];
+  return db.communityKitchenRecipes.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
+export async function createCommunityKitchenRecipe(
+  title: string, 
+  description: string, 
+  coverImage: string, 
+  ingredients: string[], 
+  steps: { order: number; text: string; imageUrl: string }[]
+) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Unauthorized' };
+
+  const db = await getDB();
+  if (!db.communityKitchenRecipes) db.communityKitchenRecipes = [];
+
+  const newRecipe: CommunityKitchenRecipe = {
+    id: generateUUID(),
+    userId: currentUser.id,
+    title,
+    description,
+    coverImage: coverImage || 'https://images.unsplash.com/photo-1568569302499-1e177770aa09?auto=format&fit=crop&q=80&w=600',
+    ingredients,
+    steps,
+    createdAt: new Date().toISOString()
+  };
+
+  db.communityKitchenRecipes.push(newRecipe);
+  await saveDB(db);
+  return { success: true, recipe: newRecipe };
+}
+
+// 5. My Crafting Guild Actions
+export async function getCraftingGuildProjects(): Promise<CraftingGuildProject[]> {
+  const db = await getDB();
+  if (!db.craftingGuildProjects) db.craftingGuildProjects = [];
+  return db.craftingGuildProjects.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
+export async function createCraftingGuildProject(
+  title: string, 
+  category: 'knitting' | 'carpentry' | 'pottery' | 'painting', 
+  imageUrl: string, 
+  patternOrTips: string, 
+  progressText: string, 
+  creatorName: string, 
+  creatorAge: number
+) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Unauthorized' };
+
+  const db = await getDB();
+  if (!db.craftingGuildProjects) db.craftingGuildProjects = [];
+
+  const newProject: CraftingGuildProject = {
+    id: generateUUID(),
+    userId: currentUser.id,
+    title,
+    category,
+    creatorName: creatorName || currentUser.displayName,
+    creatorAge: creatorAge || 65,
+    imageUrl: imageUrl || 'https://images.unsplash.com/photo-1584992236310-6edddc08acff?auto=format&fit=crop&q=80&w=500',
+    patternOrTips,
+    progressText,
+    cheers: 0,
+    encouragements: [],
+    createdAt: new Date().toISOString()
+  };
+
+  db.craftingGuildProjects.push(newProject);
+  await saveDB(db);
+  return { success: true, project: newProject };
+}
+
+export async function cheerCraftingProject(projectId: string) {
+  const db = await getDB();
+  if (!db.craftingGuildProjects) db.craftingGuildProjects = [];
+
+  const project = db.craftingGuildProjects.find(p => p.id === projectId);
+  if (!project) return { success: false, error: 'Project not found' };
+
+  project.cheers += 1;
+  await saveDB(db);
+  return { success: true, project };
+}
+
+export async function addEncouragementToProject(projectId: string, text: string, authorName: string) {
+  const db = await getDB();
+  if (!db.craftingGuildProjects) db.craftingGuildProjects = [];
+
+  const project = db.craftingGuildProjects.find(p => p.id === projectId);
+  if (!project) return { success: false, error: 'Project not found' };
+
+  const newEnc = {
+    id: generateUUID(),
+    authorName: authorName || 'A Kind Neighbor',
+    text,
+    createdAt: new Date().toISOString()
+  };
+
+  project.encouragements.push(newEnc);
+  await saveDB(db);
+  return { success: true, project };
+}
+
+
