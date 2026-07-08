@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAccessibility } from '@/components/ui/AccessibilityProvider';
 import { Button } from '../ui/Button'; // we'll create simple UI button next
+import { FormattedDate } from '@/components/ui/FormattedDate';
 import { 
   Printer, Archive, Award, Users, Music, BookOpen, Clock, Heart, Lock, Flower2, 
   Trash2, Plus, Download, Signal, RefreshCw, Star, Info, Check, ShieldAlert
@@ -654,7 +655,9 @@ export const MemoryLanes: React.FC<MemoryLanesProps> = ({ username, isSelf }) =>
                         <div className="p-4 flex flex-col gap-2">
                           <h5 className="text-xs font-bold text-slate-100">{k.title}</h5>
                           <p className="text-[11px] text-slate-400 leading-relaxed font-sans italic">&quot;{k.memory}&quot;</p>
-                          <span className="text-[9px] font-mono text-slate-500 mt-2">Deposited: {new Date(k.createdAt).toLocaleDateString()}</span>
+                          <span className="text-[9px] font-mono text-slate-500 mt-2">
+                            Deposited: <FormattedDate date={k.createdAt} showTime={false} />
+                          </span>
                         </div>
                       </div>
                     ))}
@@ -725,7 +728,9 @@ export const MemoryLanes: React.FC<MemoryLanesProps> = ({ username, isSelf }) =>
                               <span className="text-[9px] font-mono text-amber-500/70 uppercase tracking-widest mt-0.5">{w.category}</span>
                             </div>
                           </div>
-                          <span className="text-[9px] font-mono text-slate-500">{new Date(w.createdAt).toLocaleDateString()}</span>
+                          <span className="text-[9px] font-mono text-slate-500">
+                            <FormattedDate date={w.createdAt} showTime={false} />
+                          </span>
                         </div>
                       ))
                     )}
@@ -916,7 +921,9 @@ export const MemoryLanes: React.FC<MemoryLanesProps> = ({ username, isSelf }) =>
                           <p className="text-xs whitespace-pre-wrap font-serif italic font-medium leading-loose">&quot;{d.content}&quot;</p>
                           <div className="flex items-center justify-between text-[9px] opacity-50 mt-2 font-mono">
                             <span>Binding ID: {d.id}</span>
-                            <span>Stored: {new Date(d.createdAt).toLocaleDateString()}</span>
+                            <span>
+                              Stored: <FormattedDate date={d.createdAt} showTime={false} />
+                            </span>
                           </div>
                         </div>
                       );
@@ -997,7 +1004,9 @@ export const MemoryLanes: React.FC<MemoryLanesProps> = ({ username, isSelf }) =>
                             <span className="text-slate-600">The wax seal on this jar is intact. Revisit in {j.unlockYear - new Date().getFullYear()} years to dissolve the secure lock.</span>
                           )}
                         </div>
-                        <div className="text-[9px] text-slate-600 font-mono mt-2">Prepared: {new Date(j.createdAt).toLocaleDateString()}</div>
+                        <div className="text-[9px] text-slate-600 font-mono mt-2">
+                          Prepared: <FormattedDate date={j.createdAt} showTime={false} />
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -1241,7 +1250,9 @@ export const MemoryLanes: React.FC<MemoryLanesProps> = ({ username, isSelf }) =>
                             </div>
                             <div className="p-2 bg-stone-950 flex flex-col gap-1">
                               <span className="text-[10px] text-stone-200 font-serif italic leading-relaxed">&quot;{vp.caption}&quot;</span>
-                              <span className="text-[8px] font-mono text-amber-500/60">Deposited: {new Date(vp.createdAt).toLocaleDateString()}</span>
+                              <span className="text-[8px] font-mono text-amber-500/60">
+                                Deposited: <FormattedDate date={vp.createdAt} showTime={false} />
+                              </span>
                             </div>
                           </div>
                         ))}

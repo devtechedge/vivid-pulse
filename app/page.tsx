@@ -9,6 +9,7 @@ import {
   HelpCircle, Home, Archive, Compass, Moon, Sun, Monitor, MapPin
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { FormattedDate } from '@/components/ui/FormattedDate';
 
 interface Post {
   id: string;
@@ -365,7 +366,9 @@ export default function Page() {
                         </div>
                         <div className="flex flex-col">
                           <span className="text-xs font-bold text-slate-200">{post.author}</span>
-                          <span className="text-[9px] font-mono text-slate-500">{new Date(post.createdAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</span>
+                          <span className="text-[9px] font-mono text-slate-500">
+                            <FormattedDate date={post.createdAt} />
+                          </span>
                         </div>
                       </div>
 
