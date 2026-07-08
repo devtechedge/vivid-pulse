@@ -1,6 +1,12 @@
 {
   "name": "VividPulse",
-  "description": "A simple and friendly photo sharing website. Post pictures of your day, chat with family and friends, and see what is happening in an easy-to-use place.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "description": "An elegant, highly accessible sensory-friendly social network and memory preservation chest for families, seniors, and caregivers.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

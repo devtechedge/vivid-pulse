@@ -1,44 +1,39 @@
-import * as React from 'react';
-import { cn } from '@/lib/utils';
+import React from 'react';
 
-export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
-  size?: 'sm' | 'md' | 'lg' | 'icon';
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: 'primary' | 'secondary' | 'outline' | 'danger';
+  size?: 'sm' | 'md' | 'lg';
+  children: React.ReactNode;
 }
 
-export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = 'primary', size = 'md', ...props }, ref) => {
-    return (
-      <button
-        ref={ref}
-        suppressHydrationWarning
-        className={cn(
-          'inline-flex items-center justify-center font-medium transition-all duration-200 outline-none active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none cursor-pointer',
-          {
-            // Neo-Noir Cyberpunk Minimalist Variants
-            'bg-violet-600 hover:bg-violet-700 text-white shadow-[0_0_15px_rgba(124,58,237,0.3)] hover:shadow-[0_0_20px_rgba(124,58,237,0.5)] border border-violet-500/30 rounded':
-              variant === 'primary',
-            'bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700 rounded':
-              variant === 'secondary',
-            'bg-transparent hover:bg-slate-800/50 text-slate-200 border border-slate-700 hover:border-slate-500 rounded':
-              variant === 'outline',
-            'bg-transparent hover:bg-violet-500/10 text-violet-400 hover:text-violet-300 rounded':
-              variant === 'ghost',
-            'bg-rose-950/80 hover:bg-rose-900/80 text-rose-300 border border-rose-800/40 rounded':
-              variant === 'danger',
-          },
-          {
-            'px-3 py-1.5 text-xs font-semibold': size === 'sm',
-            'px-4 py-2.5 text-sm': size === 'md',
-            'px-6 py-3.5 text-base': size === 'lg',
-            'p-2': size === 'icon',
-          },
-          className
-        )}
-        {...props}
-      />
-    );
-  }
-);
+export const Button: React.FC<ButtonProps> = ({
+  variant = 'primary',
+  size = 'md',
+  className = '',
+  children,
+  ...props
+}) => {
+  const baseStyle = "inline-flex items-center justify-center font-bold tracking-wide transition-all rounded-lg cursor-pointer focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed";
+  
+  const sizeStyles = {
+    sm: "px-3 py-1.5 text-[11px] uppercase tracking-wider",
+    md: "px-4 py-2.5 text-xs uppercase tracking-wider",
+    lg: "px-6 py-3.5 text-sm uppercase tracking-wider"
+  };
 
-Button.displayName = 'Button';
+  const variantStyles = {
+    primary: "bg-amber-600 hover:bg-amber-500 text-stone-950 shadow-md border border-amber-500/40",
+    secondary: "bg-slate-900 hover:bg-slate-850 text-slate-200 border border-slate-800",
+    outline: "bg-transparent border border-slate-700 text-slate-300 hover:bg-slate-900 hover:text-slate-100",
+    danger: "bg-rose-950/40 hover:bg-rose-900/40 text-rose-400 border border-rose-900/50"
+  };
+
+  return (
+    <button
+      className={`${baseStyle} ${sizeStyles[size]} ${variantStyles[variant]} ${className}`}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+};

@@ -1,16 +1,21 @@
+import React from 'react';
 import type { Metadata } from 'next';
+import { AccessibilityProvider } from '@/components/ui/AccessibilityProvider';
 import './globals.css';
-import AccessibilityProvider from '@/components/ui/AccessibilityProvider';
 
 export const metadata: Metadata = {
-  title: 'VividPulse | Premium Visual Social Platform',
-  description: 'Unveiling a neo-noir visual network built for modern digital creators.',
+  title: 'VividPulse - Sensory Family Preservation Chest',
+  description: 'A cozy, highly accessible space for families and senior neighbors to preserve keepsakes, logs, and acoustic memories.',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html lang="en">
-      <body className="bg-[#0B0F19] text-slate-100 min-h-screen" suppressHydrationWarning>
+    <html lang="en" className="dark scroll-smooth">
+      <body className="bg-slate-950 text-slate-100 min-h-screen">
         <AccessibilityProvider>
           {children}
         </AccessibilityProvider>
@@ -18,4 +23,3 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   );
 }
-
