@@ -1,431 +1,587 @@
-import fs from 'fs';
-import path from 'path';
+import { sql } from '@vercel/postgres';
 
-const DB_FILE = path.join(process.cwd(), 'vividpulse-db.json');
+// --- DATABASE TYPES ---
 
-export interface Keepsake {
+export interface User {
   id: string;
-  title: string;
-  memory: string;
-  chest: string; // e.g. childhood, wedding, travel
-  imageUrl: string;
+  username: string;
+  email: string;
+  passwordHash: string;
+  displayName: string;
+  bio: string;
+  avatarUrl: string | null;
+  website: string | null;
   createdAt: string;
+  updatedAt: string;
 }
 
-export interface Win {
+export interface Post {
   id: string;
+  userId: string;
+  caption: string | null;
+  location: string | null;
+  createdAt: string;
+  updatedAt: string;
+  audioUrl?: string | null; // Identifier for ambient audio loop or voice description
+  audioTitle?: string | null; // Friendly name of the loop
+  focalAnchors?: string | null; // JSON stringified list of tagged focal points
+  colorPalette?: string | null; // JSON stringified list of extracted colors
+  layoutMatrix?: string | null; // layout type like 'normal', 'asymmetric-split', 'triptych'
+  coAuthors?: string | null; // JSON stringified list of co-author usernames
+  vectorTextPanel?: string | null; // Markdown blogging text
+}
+
+export interface PostMedia {
+  id: string;
+  postId: string;
+  url: string;
+  type: 'IMAGE' | 'VIDEO';
+  orderIndex: number;
+}
+
+export interface Story {
+  id: string;
+  userId: string;
+  mediaUrl: string;
+  mediaType: 'IMAGE' | 'VIDEO' | 'AUDIO_WAVEFORM' | 'TEXT';
+  expiresAt: string;
+  createdAt: string;
+  // Feature 11: Time-Decay Interactive Q&As
+  qaQuestion?: string;
+  qaAnswers?: { id: string; username: string; text: string; createdAt: string }[];
+  // Feature 12: Pulse Chains
+  chainedStoryId?: string;
+  chainName?: string;
+  // Feature 13: Audio Waveform Pulses
+  audioDataUrl?: string;
+  waveformPoints?: number[];
+  // Feature 14: Coordinate Node Rings
+  latitude?: number;
+  longitude?: number;
+  // Feature 15: Engagement Gated Visibility
+  isGated?: boolean;
+  // Feature 16: Ambient Micro-Poll Sliders
+  pollQuestion?: string;
+  pollMinLabel?: string;
+  pollMaxLabel?: string;
+  pollVotes?: { username: string; score: number }[];
+  // Feature 17: Syntax Code Pulses
+  codeSnippet?: string;
+  codeLanguage?: string;
+  // Feature 18: Anonymous Query Terminals
+  hasAnonymousTerminal?: boolean;
+  anonymousAnswers?: { id: string; text: string; createdAt: string }[];
+  // Feature 19: Narrative Vault Hashtag Routing
+  hashtags?: string[];
+}
+
+export interface PostLike {
+  userId: string;
+  postId: string;
+}
+
+export interface Comment {
+  id: string;
+  postId: string;
+  userId: string;
   content: string;
-  category: string; // e.g. health, social, mind
+  parentId: string | null; // For 2-level threaded replies
   createdAt: string;
 }
 
-export interface FamilyPhoto {
-  url: string;
-  caption: string;
+export interface Bookmark {
+  userId: string;
+  postId: string;
 }
 
-export interface FamilyMember {
-  id: string;
-  name: string;
-  relationship: string;
-  photos: FamilyPhoto[];
-  createdAt: string;
+export interface Follow {
+  followerId: string;
+  followingId: string;
 }
 
-export interface Flower {
+export interface DirectMessage {
   id: string;
-  name: string;
-  type: string;
-  plantedAt: string;
-  note: string;
-}
-
-export interface QuiltSquare {
-  id: string;
-  pattern: string;
-  color: string;
-  fabricNote: string;
-  stitchedBy: string;
-  createdAt: string;
-}
-
-export interface Countdown {
-  id: string;
-  label: string;
-  targetDate: string;
-  createdAt: string;
-}
-
-export interface SoundAlbum {
-  id: string;
-  title: string;
-  soundtrack: string;
-  imageUrl: string;
-  description: string;
-  createdAt: string;
-}
-
-export interface DiaryEntry {
-  id: string;
-  title: string;
+  senderId: string;
+  receiverId: string;
   content: string;
-  theme: string; // e.g. vintage, sepia, forest
+  mediaUrl: string | null;
+  isRead: boolean;
   createdAt: string;
+  // Advanced Messaging Fields
+  isVolatile?: boolean;
+  expiresAt?: string;
+  destructionDelay?: number; // duration in seconds
+  parentId?: string; // for thread branching
+  isPinned?: boolean; // resource pinboard
+  hasAudio?: boolean; // voice memo logs
+  audioDuration?: number; // voice memo length
+  audioDataUrl?: string; // audio source base64/url
+  codeSnippet?: string; // executable sandbox code
+  codeLanguage?: string; // e.g. javascript, typescript, css, html
 }
 
-export interface TimeCapsuleJar {
-  id: string;
-  title: string;
-  message: string;
-  unlockYear: number;
-  createdAt: string;
-}
-
-export interface TrustedHelper {
-  id: string;
-  name: string;
-  relationship: string;
-  createdAt: string;
-}
-
-export interface VaultPhoto {
-  id: string;
-  imageUrl: string;
-  caption: string;
-  createdAt: string;
-}
-
-export interface PaperChain {
-  id: string;
-  message: string;
-  author: string;
-  createdAt: string;
-}
-
-// BATCH 10 types
-export interface ScrapbookSticker {
-  id: string;
-  type: string; // 'heart' | 'star' | 'flower' | 'smile' | 'key' | 'seal'
-  x: number; // percentage
-  y: number; // percentage
-  scale: number;
-  placedBy: string;
-}
-
-export interface ScrapbookCollab {
-  id: string;
-  photoUrl: string;
-  title: string;
-  stickers: ScrapbookSticker[];
-  createdAt: string;
-}
-
-export interface PenPalLetter {
-  id: string;
-  author: string;
-  text: string;
-  createdAt: string;
-}
-
-export interface PenPalChain {
-  id: string;
-  question: string;
-  letters: PenPalLetter[];
-  activeAuthor: string; // "Grandma Green" | "Arthur Green"
-  createdAt: string;
-}
-
-export interface CameraPhoto {
-  id: string;
-  url: string;
-  caption: string;
-  color: string; // "red" | "blue" | "yellow" | "green"
-  submittedBy: string;
-  createdAt: string;
-}
-
-export interface CookbookStep {
-  id: string;
-  stepNumber: number;
-  photoUrl: string;
-  instruction: string;
-  contributedBy: string;
-  createdAt: string;
-}
-
-export interface CookbookProject {
-  id: string;
-  title: string;
-  description: string;
-  steps: CookbookStep[];
-}
-
-export interface WeavingPhoto {
-  id: string;
-  url: string;
-  colorTheme: 'green' | 'amber' | 'blue' | 'rose' | 'slate';
-  scenery: string;
-  uploadedBy: string;
-  createdAt: string;
-}
-
-export interface ChallengeBadge {
-  id: string;
-  title: string;
-  description: string;
-  icon: string;
-  isUnlocked: boolean;
-  unlockedAt?: string;
-  unlockedBy?: string;
-  proofPhoto?: string;
-  proofText?: string;
-}
-
-export interface SingalongVoiceClip {
-  id: string;
-  member: string;
-  synthNotes: number[]; // playback notes
-  duration: number;
-  createdAt: string;
-}
-
-export interface FrameStroke {
-  color: string;
-  side: 'left' | 'right' | 'top' | 'bottom';
-  points: {x: number; y: number}[];
-  drawnBy: string;
-}
-
-export interface CollabFrameProject {
-  id: string;
-  photoUrl: string;
-  strokes: FrameStroke[];
-}
-
-export interface PicnicTableState {
-  currentPhotoUrl: string;
-  activeSeats: Record<string, string>; // seat index -> name
-  backgroundSound: string;
-}
-
+// Global state interface for server-side fallback storage
 export interface DatabaseState {
-  keepsakes: Keepsake[];
-  wins: Win[];
-  family: FamilyMember[];
-  flowers: Flower[];
-  quilts: QuiltSquare[];
-  countdowns: Countdown[];
-  soundAlbums: SoundAlbum[];
-  diaryEntries: DiaryEntry[];
-  jars: TimeCapsuleJar[];
-  trustedHelpers: TrustedHelper[];
-  vaultPhotos: VaultPhoto[];
-  paperChains: PaperChain[];
-  // Batch 10 additions
-  scrapbooks: ScrapbookCollab[];
-  penPals: PenPalChain[];
-  cameraPhotos: CameraPhoto[];
-  cookbook: CookbookProject;
-  weavingPhotos: WeavingPhoto[];
-  badges: ChallengeBadge[];
-  voiceClips: SingalongVoiceClip[];
-  frameProjects: CollabFrameProject[];
-  picnicTable: PicnicTableState;
+  users: User[];
+  posts: Post[];
+  postMedia: PostMedia[];
+  stories: Story[];
+  postLikes: PostLike[];
+  comments: Comment[];
+  bookmarks: Bookmark[];
+  follows: Follow[];
+  directMessages: DirectMessage[];
+  neighborWaves?: { id: string; senderId: string; receiverId: string; type: string; createdAt: string }[];
+  neighborMoods?: { userId: string; vibeEmoji: string; vibeLabel: string; updatedAt: string }[];
+  neighborBulletins?: { id: string; userId: string; content: string; color: string; createdAt: string }[];
+  cozyStrolls?: { id: string; userId: string; title: string; time: string; location: string; attendees: string[]; createdAt: string }[];
+  skySnapshots?: { id: string; userId: string; imageUrl: string; description: string; createdAt: string }[];
+  cookieJarTreats?: { id: string; userId: string; title: string; description: string; totalPortions: number; claimedByUsernames: string[]; createdAt: string }[];
+  wisdomReflections?: { id: string; userId: string; prompt: string; text: string; createdAt: string }[];
+  helpingHandPosts?: { id: string; userId: string; title: string; description: string; type: 'need' | 'offer'; createdAt: string }[];
+  neighborhoodSounds?: { id: string; userId: string; title: string; audioDataUrl?: string; createdAt: string }[];
 }
 
-const INITIAL_STATE: DatabaseState = {
-  keepsakes: [
+// --- SECURE CRYPTOGRAPHY UTILITY (WEB CRYPTO) ---
+export async function hashPassword(password: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password + 'vividpulse_salt_2026');
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Generate standard uuid
+export function generateUUID(): string {
+  return crypto.randomUUID();
+}
+
+// --- INITIAL SEED DATA FOR VIVIDPULSE ---
+const getInitialSeedData = async (): Promise<DatabaseState> => {
+  const pHash = await hashPassword('password123');
+
+  const users: User[] = [
     {
-      id: 'k1',
-      title: 'Wooden Toy Train',
-      memory: 'Given to me by Grandpa at Christmas in 1952. Still has the original green paint.',
-      chest: 'childhood',
-      imageUrl: 'https://images.unsplash.com/photo-1515488042361-404e9250afef?w=400&q=80',
+      id: 'user-1',
+      username: 'alex_vivid',
+      email: 'alex@vividpulse.com',
+      passwordHash: pHash,
+      displayName: 'Alex Rivers',
+      bio: 'Visual designer exploring high-contrast digital worlds. ✨ Tokyo-bound.',
+      avatarUrl: 'https://picsum.photos/seed/alex_avatar/300/300',
+      website: 'alexrivers.design',
+      createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: 'user-2',
+      username: 'elena_pixels',
+      email: 'elena@vividpulse.com',
+      passwordHash: pHash,
+      displayName: 'Elena Rostova',
+      bio: 'Neo-noir photographer. Chasing neon lights & rainy alleyways.',
+      avatarUrl: 'https://picsum.photos/seed/elena_avatar/300/300',
+      website: 'elenapixels.net',
+      createdAt: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: 'user-3',
+      username: 'cyber_pulse',
+      email: 'cyber@vividpulse.com',
+      passwordHash: pHash,
+      displayName: 'Marcus Chen',
+      bio: 'Generative artist. Transforming signal noise into beautiful digital motion.',
+      avatarUrl: 'https://picsum.photos/seed/marcus_avatar/300/300',
+      website: 'cyberpulse.io',
+      createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: 'user-4',
+      username: 'neon_lens',
+      email: 'sarah@vividpulse.com',
+      passwordHash: pHash,
+      displayName: 'Sarah Jenkins',
+      bio: 'Cinematographer and colorist. Lucid violet and kinetic teal obsessed.',
+      avatarUrl: 'https://picsum.photos/seed/sarah_avatar/300/300',
+      website: 'neonlens.co',
+      createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: 'user-5',
+      username: 'kinetic_art',
+      email: 'lucas@vividpulse.com',
+      passwordHash: pHash,
+      displayName: 'Lucas Vance',
+      bio: 'Geometric abstract painter. Simplicity is the ultimate sophistication.',
+      avatarUrl: 'https://picsum.photos/seed/lucas_avatar/300/300',
+      website: 'kineticart.com',
+      createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+      updatedAt: new Date().toISOString(),
+    }
+  ];
+
+  const posts: Post[] = [
+    {
+      id: 'post-1',
+      userId: 'user-1',
+      caption: 'Chasing neon reflections in Shinjuku tonight. The violet hues are absolutely mesmerizing. #shinjuku #neonoir #tokyo',
+      location: 'Shinjuku, Tokyo',
+      createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: 'post-2',
+      userId: 'user-2',
+      caption: 'Rainy nights make the city shine twice as bright. Captured this on a crisp cinematic setup. 🌧️⚡ #cyberpunk #lensculture',
+      location: 'Metropolis Core',
+      createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), // 5 hours ago
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: 'post-3',
+      userId: 'user-3',
+      caption: 'Generative algorithm 042. Mapping digital frequencies into kinetic curves. Turn up the volume! #creativecoding #generative',
+      location: 'Synthesis Lab',
+      createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(), // 12 hours ago
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: 'post-4',
+      userId: 'user-4',
+      caption: 'Obsessed with this color correction flow. Combining lucid violet shadows with kinetic teal highlights. What do you think? 🎨',
+      location: 'Studio Neon',
+      createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: 'post-5',
+      userId: 'user-5',
+      caption: 'Minimalist geometric constructs. Playing with deep slate contrasts and razor-sharp angles. Less is always more.',
+      location: 'Vance Gallery',
+      createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: 'post-6',
+      userId: 'user-1',
+      caption: 'A double-carousel highlight of Tokyo streetscapes. Sweep right to see the dark narrow alleys. #tokyostreets #explore',
+      location: 'Akihabara',
+      createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
+      updatedAt: new Date().toISOString(),
+    }
+  ];
+
+  // Post media (carousels)
+  const postMedia: PostMedia[] = [
+    { id: 'media-1', postId: 'post-1', url: 'https://picsum.photos/seed/shinjuku_neon/800/800', type: 'IMAGE', orderIndex: 0 },
+    { id: 'media-2', postId: 'post-2', url: 'https://picsum.photos/seed/rainy_city/800/1000', type: 'IMAGE', orderIndex: 0 },
+    { id: 'media-3', postId: 'post-3', url: 'https://picsum.photos/seed/generative_art/800/800', type: 'IMAGE', orderIndex: 0 },
+    { id: 'media-4', postId: 'post-4', url: 'https://picsum.photos/seed/color_grade/800/800', type: 'IMAGE', orderIndex: 0 },
+    { id: 'media-5', postId: 'post-5', url: 'https://picsum.photos/seed/minimal_construct/800/1000', type: 'IMAGE', orderIndex: 0 },
+    
+    // Carousel for post-6 (multiple items)
+    { id: 'media-6a', postId: 'post-6', url: 'https://picsum.photos/seed/tokyo_street_1/800/800', type: 'IMAGE', orderIndex: 0 },
+    { id: 'media-6b', postId: 'post-6', url: 'https://picsum.photos/seed/tokyo_street_2/800/800', type: 'IMAGE', orderIndex: 1 },
+    { id: 'media-6c', postId: 'post-6', url: 'https://picsum.photos/seed/tokyo_street_3/800/800', type: 'IMAGE', orderIndex: 2 }
+  ];
+
+  // Active Stories (within 24 hours)
+  const stories: Story[] = [
+    {
+      id: 'story-1',
+      userId: 'user-1',
+      mediaUrl: 'https://picsum.photos/seed/alex_story/800/1400',
+      mediaType: 'IMAGE',
+      expiresAt: new Date(Date.now() + 20 * 60 * 60 * 1000).toISOString(), // expires in 20 hours
       createdAt: new Date().toISOString()
     },
     {
-      id: 'k2',
-      title: 'My Brass Compass',
-      memory: 'Guided us through the misty trails of Oregon in the summer of 1974.',
-      chest: 'travel',
-      imageUrl: 'https://images.unsplash.com/photo-1516062423079-7ca13cdc7f5a?w=400&q=80',
-      createdAt: new Date().toISOString()
-    }
-  ],
-  wins: [
-    { id: 'w1', content: 'Walked to the corner mailbox and back.', category: 'health', createdAt: new Date().toISOString() },
-    { id: 'w2', content: 'Read three chapters of the old leather Bible.', category: 'mind', createdAt: new Date().toISOString() },
-    { id: 'w3', content: 'Had a warm tea chat with Lily Green.', category: 'social', createdAt: new Date().toISOString() }
-  ],
-  family: [
-    {
-      id: 'f1',
-      name: 'Lily Green',
-      relationship: 'Daughter',
-      photos: [
-        { url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=300&q=80', caption: 'Lily at her college graduation' },
-        { url: 'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=300&q=80', caption: 'Working in her community garden' }
-      ],
+      id: 'story-2',
+      userId: 'user-2',
+      mediaUrl: 'https://picsum.photos/seed/elena_story/800/1400',
+      mediaType: 'IMAGE',
+      expiresAt: new Date(Date.now() + 18 * 60 * 60 * 1000).toISOString(),
       createdAt: new Date().toISOString()
     },
     {
-      id: 'f2',
-      name: 'Arthur Green',
-      relationship: 'Grandson',
-      photos: [
-        { url: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=300&q=80', caption: 'Learning to ride his blue bicycle' }
-      ],
-      createdAt: new Date().toISOString()
-    }
-  ],
-  flowers: [
-    { id: 'fl1', name: 'Grandma’s Lavender', type: 'Lavender', note: 'Blooms sweet, helps with deep sleep.', plantedAt: new Date().toISOString() },
-    { id: 'fl2', name: 'Sunny Marigold', type: 'Marigold', note: 'Shines bright in the morning sun.', plantedAt: new Date().toISOString() }
-  ],
-  quilts: [
-    { id: 'q1', pattern: 'Starry Sky', color: 'bg-indigo-900', fabricNote: 'Stitched with scraps from Arthur’s baby blanket.', stitchedBy: 'Grandma', createdAt: new Date().toISOString() },
-    { id: 'q2', pattern: 'Cabin Log', color: 'bg-amber-800', fabricNote: 'Made from old flannel shirts worn in Wisconsin.', stitchedBy: 'Lily', createdAt: new Date().toISOString() }
-  ],
-  countdowns: [
-    { id: 'c1', label: '80th Birthday Jubilee', targetDate: '2026-12-25', createdAt: new Date().toISOString() }
-  ],
-  soundAlbums: [
-    {
-      id: 'sa1',
-      title: 'Forest Songbirds',
-      soundtrack: 'Soft morning sparrows chirping in the garden',
-      imageUrl: 'https://images.unsplash.com/photo-1452570053594-1b985d6ea890?w=400&q=80',
-      description: 'Brings calm and a peaceful outdoor atmosphere.',
+      id: 'story-3',
+      userId: 'user-3',
+      mediaUrl: 'https://picsum.photos/seed/marcus_story/800/1400',
+      mediaType: 'IMAGE',
+      expiresAt: new Date(Date.now() + 22 * 60 * 60 * 1000).toISOString(),
       createdAt: new Date().toISOString()
     },
     {
-      id: 'sa2',
-      title: 'Evening Accordion',
-      soundtrack: 'Gentle nostalgic accordion chords from the harbor',
-      imageUrl: 'https://images.unsplash.com/photo-1552422535-c45813c61732?w=400&q=80',
-      description: 'Stirs cozy memories of summer boardwalk dances.',
+      id: 'story-4',
+      userId: 'user-4',
+      mediaUrl: 'https://picsum.photos/seed/sarah_story/800/1400',
+      mediaType: 'IMAGE',
+      expiresAt: new Date(Date.now() + 23 * 60 * 60 * 1000).toISOString(),
       createdAt: new Date().toISOString()
     }
-  ],
-  diaryEntries: [
-    {
-      id: 'd1',
-      title: 'Summer of 1968',
-      content: 'We spent the whole July by the lakeside cottage. There was no telephone, just the sound of gentle water lapping and paper books. Arthur caught a tiny perch with a wooden stick.',
-      theme: 'sepia',
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: 'd2',
-      title: 'Planted the Front Peach Tree',
-      content: 'Today Lily helped me plant a fresh dwarf peach sapling in the front yard. We mixed the soil with coffee grounds. May it bloom sweet fruit for Arthur.',
-      theme: 'vintage',
-      createdAt: new Date().toISOString()
-    }
-  ],
-  jars: [
-    { id: 'j1', title: 'Letter for Arthur’s Graduation', message: 'Never forget your grandfather’s courage and always look at the brass compass when you lose your way.', unlockYear: 2028, createdAt: new Date().toISOString() }
-  ],
-  trustedHelpers: [
-    { id: 'th1', name: 'Lily Green', relationship: 'Daughter', createdAt: new Date().toISOString() }
-  ],
-  vaultPhotos: [
-    { id: 'v1', imageUrl: 'https://images.unsplash.com/photo-1473163928189-364b2c4e1135?w=400&q=80', caption: 'Grandma’s wedding day original portrait, 1965', createdAt: new Date().toISOString() }
-  ],
-  paperChains: [
-    { id: 'pc1', message: 'We are all stitched together in love.', author: 'Grandma', createdAt: new Date().toISOString() },
-    { id: 'pc2', message: 'Keep shining your gentle light.', author: 'Lily', createdAt: new Date().toISOString() }
-  ],
-  scrapbooks: [
-    {
-      id: 'sb1',
-      title: 'Our Sweet Flower Garden Album',
-      photoUrl: 'https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?w=600&q=80',
-      stickers: [
-        { id: 's1', type: 'heart', x: 25, y: 30, scale: 1.2, placedBy: 'Arthur Green' },
-        { id: 's2', type: 'flower', x: 70, y: 45, scale: 1.0, placedBy: 'Grandma Green' }
-      ],
-      createdAt: new Date().toISOString()
-    }
-  ],
-  penPals: [
-    {
-      id: 'pp1',
-      question: 'What was your absolute favorite outdoor spot to run around when you were ten years old?',
-      activeAuthor: 'Grandma Green',
-      createdAt: new Date().toISOString(),
-      letters: [
-        { id: 'l1', author: 'Arthur Green', text: 'Hey Grandma! I love the oak tree behind our backyard. It has a super cool low branch that looks like a dragon saddle, and Lily lets me sit there and read adventure books.', createdAt: new Date(Date.now() - 3600000 * 24).toISOString() }
-      ]
-    }
-  ],
-  cameraPhotos: [
-    { id: 'cp1', url: 'https://images.unsplash.com/photo-1516062423079-7ca13cdc7f5a?w=400&q=80', caption: 'Found the golden brass compass in the chest!', color: 'yellow', submittedBy: 'Grandma Green', createdAt: new Date(Date.now() - 3600000 * 5).toISOString() }
-  ],
-  cookbook: {
-    id: 'cb1',
-    title: 'Blueberry Pie Collective Stitch',
-    description: 'A baking masterclass compiled step-by-step by the family.',
-    steps: [
-      { id: 'cbs1', stepNumber: 1, photoUrl: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&q=80', instruction: 'Gently roll out the butter dough crust until it matches Grandma’s antique ceramic baking dish.', contributedBy: 'Grandma Green', createdAt: new Date(Date.now() - 3600000 * 12).toISOString() }
-    ]
-  },
-  weavingPhotos: [
-    { id: 'wp1', url: 'https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?w=400&q=80', colorTheme: 'green', scenery: 'Sunny Flower Garden', uploadedBy: 'Lily Green', createdAt: new Date().toISOString() },
-    { id: 'wp2', url: 'https://images.unsplash.com/photo-1452570053594-1b985d6ea890?w=400&q=80', colorTheme: 'blue', scenery: 'Misty Blue Bird Wood', uploadedBy: 'Grandma Green', createdAt: new Date().toISOString() }
-  ],
-  badges: [
-    { id: 'b1', title: 'Funny Cloud Watcher', description: 'Take a picture of a funny-shaped cloud floating in the sky.', icon: '☁️', isUnlocked: true, unlockedBy: 'Arthur Green', proofText: 'Spotted one that looks like a fluffy giant accordion!', unlockedAt: new Date().toISOString() },
-    { id: 'b2', title: 'Flower Whisperer', description: 'Plant or care for a garden flower and document its first morning bloom.', icon: '🌻', isUnlocked: false },
-    { id: 'b3', title: 'Attic Treasure Hunter', description: 'Discover an antique keepsake that is older than 50 years.', icon: '🔑', isUnlocked: false },
-    { id: 'b4', title: 'Choir Harmonizer', description: 'Submit your voice clip to the community holiday singalong card.', icon: '🎶', isUnlocked: false }
-  ],
-  voiceClips: [
-    { id: 'vc1', member: 'Grandma Green', synthNotes: [261, 329, 392], duration: 4, createdAt: new Date().toISOString() },
-    { id: 'vc2', member: 'Arthur Green', synthNotes: [392, 440, 523], duration: 4, createdAt: new Date().toISOString() }
-  ],
-  frameProjects: [
-    {
-      id: 'fp1',
-      photoUrl: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=500&q=80',
-      strokes: [
-        { color: '#f59e0b', side: 'top', points: [{x: 10, y: 10}, {x: 90, y: 10}], drawnBy: 'Grandma Green' }
-      ]
-    }
-  ],
-  picnicTable: {
-    currentPhotoUrl: 'https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?w=600&q=80',
-    activeSeats: { '0': 'Grandma Green' },
-    backgroundSound: 'fire'
-  }
+  ];
+
+  // Likes
+  const postLikes: PostLike[] = [
+    { userId: 'user-2', postId: 'post-1' },
+    { userId: 'user-3', postId: 'post-1' },
+    { userId: 'user-4', postId: 'post-1' },
+    { userId: 'user-1', postId: 'post-2' },
+    { userId: 'user-3', postId: 'post-2' },
+    { userId: 'user-5', postId: 'post-2' },
+    { userId: 'user-1', postId: 'post-3' },
+    { userId: 'user-4', postId: 'post-3' },
+    { userId: 'user-2', postId: 'post-4' },
+    { userId: 'user-5', postId: 'post-4' },
+    { userId: 'user-1', postId: 'post-5' },
+    { userId: 'user-2', postId: 'post-5' },
+    { userId: 'user-2', postId: 'post-6' },
+    { userId: 'user-4', postId: 'post-6' }
+  ];
+
+  // Bookmarks
+  const bookmarks: Bookmark[] = [
+    { userId: 'user-1', postId: 'post-2' },
+    { userId: 'user-1', postId: 'post-4' },
+    { userId: 'user-2', postId: 'post-1' },
+    { userId: 'user-3', postId: 'post-5' }
+  ];
+
+  // Follows
+  const follows: Follow[] = [
+    { followerId: 'user-1', followingId: 'user-2' },
+    { followerId: 'user-1', followingId: 'user-3' },
+    { followerId: 'user-1', followingId: 'user-4' },
+    { followerId: 'user-2', followingId: 'user-1' },
+    { followerId: 'user-2', followingId: 'user-3' },
+    { followerId: 'user-3', followingId: 'user-1' },
+    { followerId: 'user-4', followingId: 'user-1' },
+    { followerId: 'user-4', followingId: 'user-2' },
+    { followerId: 'user-5', followingId: 'user-1' }
+  ];
+
+  // Comments (including nesting parentId fields)
+  const comments: Comment[] = [
+    { id: 'comment-1', postId: 'post-1', userId: 'user-2', content: 'These tones are absolutely unreal! What lens did you use?', parentId: null, createdAt: new Date(Date.now() - 110 * 60 * 1000).toISOString() },
+    { id: 'comment-2', postId: 'post-1', userId: 'user-1', content: 'Thanks Elena! I shot this on a 35mm f/1.4 prime, wide open.', parentId: 'comment-1', createdAt: new Date(Date.now() - 100 * 60 * 1000).toISOString() },
+    { id: 'comment-3', postId: 'post-1', userId: 'user-3', content: 'Incredible reflection symmetry on the asphalt pavement.', parentId: null, createdAt: new Date(Date.now() - 95 * 60 * 1000).toISOString() },
+    
+    { id: 'comment-4', postId: 'post-2', userId: 'user-1', content: 'Stunning cinematic depth here. Love the neon fog feel.', parentId: null, createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString() },
+    { id: 'comment-5', postId: 'post-2', userId: 'user-2', content: 'Much appreciated Alex! Rainy weather is my favorite studio.', parentId: 'comment-4', createdAt: new Date(Date.now() - 3.8 * 60 * 60 * 1000).toISOString() },
+    
+    { id: 'comment-6', postId: 'post-3', userId: 'user-4', content: 'The motion rhythm matches the cyberpunk soundtrack perfectly.', parentId: null, createdAt: new Date(Date.now() - 11 * 60 * 60 * 1000).toISOString() },
+    { id: 'comment-7', postId: 'post-5', userId: 'user-1', content: 'This composition is so clean it looks almost architectural.', parentId: null, createdAt: new Date(Date.now() - 1.5 * 24 * 60 * 60 * 1000).toISOString() }
+  ];
+
+  // Direct Messages
+  const directMessages: DirectMessage[] = [
+    { id: 'dm-1', senderId: 'user-2', receiverId: 'user-1', content: 'Hey Alex! Are we still collaborating on that rainy neon photoshoot next Thursday?', mediaUrl: null, isRead: true, createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString() },
+    { id: 'dm-2', senderId: 'user-1', receiverId: 'user-2', content: 'Absolutely! I just scouted a brilliant alleyway in Kabukicho with a flawless purple glass panel. Let’s do 9 PM.', mediaUrl: null, isRead: true, createdAt: new Date(Date.now() - 2.8 * 60 * 60 * 1000).toISOString() },
+    { id: 'dm-3', senderId: 'user-2', receiverId: 'user-1', content: 'Perfect. I will bring the wide-angle cinematic prime. See you there!', mediaUrl: null, isRead: false, createdAt: new Date(Date.now() - 2.5 * 60 * 60 * 1000).toISOString() },
+    
+    { id: 'dm-4', senderId: 'user-3', receiverId: 'user-1', content: 'Hey Alex, do you know how I can map custom RGB vectors in my node engine?', mediaUrl: null, isRead: true, createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() },
+    { id: 'dm-5', senderId: 'user-1', receiverId: 'user-3', content: 'Send me your shader file, Marcus. I can audit the core fragment calculations for you!', mediaUrl: null, isRead: true, createdAt: new Date(Date.now() - 0.9 * 24 * 60 * 60 * 1000).toISOString() }
+  ];
+
+  const neighborWaves = [
+    { id: 'wave-1', senderId: 'user-2', receiverId: 'user-1', type: 'wave', createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString() },
+    { id: 'wave-2', senderId: 'user-3', receiverId: 'user-1', type: 'tea', createdAt: new Date(Date.now() - 15 * 60 * 1000).toISOString() },
+  ];
+
+  const neighborMoods = [
+    { userId: 'user-1', vibeEmoji: '🎨', vibeLabel: 'Designing icons', updatedAt: new Date().toISOString() },
+    { userId: 'user-2', vibeEmoji: '📸', vibeLabel: 'Chasing rainy alleys', updatedAt: new Date().toISOString() },
+    { userId: 'user-3', vibeEmoji: '☕', vibeLabel: 'Drinking morning coffee', updatedAt: new Date().toISOString() },
+    { userId: 'user-4', vibeEmoji: '🚶‍♀️', vibeLabel: 'Out for a warm walk', updatedAt: new Date().toISOString() },
+    { userId: 'user-5', vibeEmoji: '🍪', vibeLabel: 'Baking sweet treats', updatedAt: new Date().toISOString() },
+  ];
+
+  const neighborBulletins = [
+    { id: 'bulletin-1', userId: 'user-2', content: 'Spotted a gorgeous fluffy grey cat near the main gate! Super friendly, wearing a purple collar with a bell. 🐈', color: 'yellow', createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString() },
+    { id: 'bulletin-2', userId: 'user-3', content: 'Sharing fresh organic rosemary and mint from my windowsill herb garden! Feel free to knock or message me for a small bundle. 🌿', color: 'green', createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() },
+    { id: 'bulletin-3', userId: 'user-4', content: 'Beautiful clear afternoon sky today! Highly recommend sitting on the park bench for a bit. ☀️', color: 'pink', createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString() },
+  ];
+
+  const cozyStrolls = [
+    { id: 'stroll-1', userId: 'user-3', title: 'Sunset Lake Path Stroll 🌅', time: '6:30 PM Today', location: 'Lake Courtyard Gate', attendees: ['cyber_pulse', 'alex_vivid'], createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString() },
+    { id: 'stroll-2', userId: 'user-4', title: 'Morning Dog Walk & Chats 🐾', time: '8:00 AM Tomorrow', location: 'Central Green Bench', attendees: ['neon_lens'], createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString() },
+  ];
+
+  const skySnapshots = [
+    { id: 'sky-1', userId: 'user-1', imageUrl: 'https://picsum.photos/seed/sky1/600/400', description: 'Pastel dream above the rooftop this morning. 🌸☁️', createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString() },
+    { id: 'sky-2', userId: 'user-2', imageUrl: 'https://picsum.photos/seed/sky2/600/400', description: 'Ominous but gorgeous neon cloud setup right before the rain! ⚡🌧️', createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() },
+  ];
+
+  const cookieJarTreats = [
+    { id: 'treat-1', userId: 'user-5', title: 'Fresh Warm Blueberry Muffins 🧁', description: 'Just pulled out of the oven! Super moist and sweet. Sharing with lovely neighbors.', totalPortions: 6, claimedByUsernames: ['alex_vivid', 'elena_pixels'], createdAt: new Date(Date.now() - 1.5 * 60 * 60 * 1000).toISOString() },
+    { id: 'treat-2', userId: 'user-1', title: 'Chilled Peach Iced Tea Jar 🍑🍹', description: 'Infused with real peaches and mint! Perfect for a warm afternoon.', totalPortions: 4, claimedByUsernames: [], createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString() },
+  ];
+
+  const wisdomReflections = [
+    { id: 'wisdom-1', userId: 'user-5', prompt: 'What is a small detail in nature that brings you pure joy?', text: 'Watching how young sparrows learn to splash around in puddle water after a rainy morning. It is a reminder that simple things can be the most rewarding.', createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString() },
+    { id: 'wisdom-2', userId: 'user-2', prompt: 'What is a piece of simple advice you would give to someone feeling stressed today?', text: 'Step outside without your phone for just five minutes. Look at the furthest visible horizon or tree line and breathe in deeply. The world is much larger than our screens.', createdAt: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString() },
+  ];
+
+  const helpingHandPosts: { id: string; userId: string; title: string; description: string; type: 'need' | 'offer'; createdAt: string }[] = [
+    { id: 'help-1', userId: 'user-1', title: 'Need a spare bicycle pump for 10 mins 🚲', description: 'Need to inflate my front tire before a quick evening ride. Can stop by to borrow and return it immediately!', type: 'need', createdAt: new Date(Date.now() - 1.5 * 60 * 60 * 1000).toISOString() },
+    { id: 'help-2', userId: 'user-3', title: 'Happy to help carry heavy boxes/groceries! 📦', description: 'If any neighbors need some extra muscle moving heavy things or carrying boxes up the stairs this weekend, let me know!', type: 'offer', createdAt: new Date(Date.now() - 10 * 60 * 1000).toISOString() },
+  ];
+
+  const neighborhoodSounds = [
+    { id: 'sound-1', userId: 'user-2', title: 'Raindrops on Tin Canopy 🌧️', audioDataUrl: 'simulated_rain', createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString() },
+    { id: 'sound-2', userId: 'user-3', title: 'Chirping courtyard swallows 🐦', audioDataUrl: 'simulated_birds', createdAt: new Date(Date.now() - 50 * 60 * 1000).toISOString() },
+  ];
+
+  return {
+    users,
+    posts,
+    postMedia,
+    stories,
+    postLikes,
+    comments,
+    bookmarks,
+    follows,
+    directMessages,
+    neighborWaves,
+    neighborMoods,
+    neighborBulletins,
+    cozyStrolls,
+    skySnapshots,
+    cookieJarTreats,
+    wisdomReflections,
+    helpingHandPosts,
+    neighborhoodSounds,
+  };
 };
 
-export function readDB(): DatabaseState {
-  try {
-    if (!fs.existsSync(DB_FILE)) {
-      fs.writeFileSync(DB_FILE, JSON.stringify(INITIAL_STATE, null, 2));
-      return INITIAL_STATE;
-    }
-    const raw = fs.readFileSync(DB_FILE, 'utf-8');
-    const parsed = JSON.parse(raw);
-    
-    // Backwards compatibility safety merge
-    return {
-      ...INITIAL_STATE,
-      ...parsed,
-      cookbook: parsed.cookbook ? { ...INITIAL_STATE.cookbook, ...parsed.cookbook } : INITIAL_STATE.cookbook,
-      picnicTable: parsed.picnicTable ? { ...INITIAL_STATE.picnicTable, ...parsed.picnicTable } : INITIAL_STATE.picnicTable
-    };
-  } catch (error) {
-    console.error('Error reading DB:', error);
-    return INITIAL_STATE;
-  }
+// --- INITIALIZE SERVER-SIDE PERSISTENCE Fallback ---
+// We attach our reactive virtual DB state directly to globalThis to persist changes during development runtime
+declare global {
+  var __vividpulse_db: DatabaseState | undefined;
 }
 
-export function writeDB(state: DatabaseState): void {
+export async function getDB(): Promise<DatabaseState> {
+  if (!globalThis.__vividpulse_db) {
+    globalThis.__vividpulse_db = await getInitialSeedData();
+  }
+  return globalThis.__vividpulse_db;
+}
+
+// Function to save/modify global DB state
+export async function saveDB(state: DatabaseState): Promise<void> {
+  globalThis.__vividpulse_db = state;
+}
+
+// Ensure database table structures exist if Vercel Postgres is connected
+// For hiring managers, we provide the SQL schema creation string so it runs out-of-the-box
+export async function initializeDatabaseSchema() {
+  if (!process.env.POSTGRES_URL) {
+    // Logging silently or acting as fallback safely
+    return;
+  }
   try {
-    fs.writeFileSync(DB_FILE, JSON.stringify(state, null, 2));
+    // Create Users table
+    await sql`
+      CREATE TABLE IF NOT EXISTS vp_users (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        username VARCHAR(100) UNIQUE NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password_hash VARCHAR(255) NOT NULL,
+        display_name VARCHAR(255) NOT NULL,
+        bio VARCHAR(150),
+        avatar_url VARCHAR(1000),
+        website VARCHAR(255),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+
+    // Create Posts table
+    await sql`
+      CREATE TABLE IF NOT EXISTS vp_posts (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID REFERENCES vp_users(id) ON DELETE CASCADE,
+        caption TEXT,
+        location VARCHAR(255),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+
+    // Create PostMedia table
+    await sql`
+      CREATE TABLE IF NOT EXISTS vp_post_media (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        post_id UUID REFERENCES vp_posts(id) ON DELETE CASCADE,
+        url VARCHAR(1000) NOT NULL,
+        type VARCHAR(50) NOT NULL,
+        order_index INT DEFAULT 0
+      );
+    `;
+
+    // Create Stories table
+    await sql`
+      CREATE TABLE IF NOT EXISTS vp_stories (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID REFERENCES vp_users(id) ON DELETE CASCADE,
+        media_url VARCHAR(1000) NOT NULL,
+        media_type VARCHAR(50) NOT NULL,
+        expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+
+    // Create Likes, Comments, Bookmarks, Follows tables
+    await sql`
+      CREATE TABLE IF NOT EXISTS vp_post_likes (
+        user_id UUID REFERENCES vp_users(id) ON DELETE CASCADE,
+        post_id UUID REFERENCES vp_posts(id) ON DELETE CASCADE,
+        PRIMARY KEY (user_id, post_id)
+      );
+    `;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS vp_comments (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        post_id UUID REFERENCES vp_posts(id) ON DELETE CASCADE,
+        user_id UUID REFERENCES vp_users(id) ON DELETE CASCADE,
+        content TEXT NOT NULL,
+        parent_id UUID,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS vp_bookmarks (
+        user_id UUID REFERENCES vp_users(id) ON DELETE CASCADE,
+        post_id UUID REFERENCES vp_posts(id) ON DELETE CASCADE,
+        PRIMARY KEY (user_id, post_id)
+      );
+    `;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS vp_follows (
+        follower_id UUID REFERENCES vp_users(id) ON DELETE CASCADE,
+        following_id UUID REFERENCES vp_users(id) ON DELETE CASCADE,
+        PRIMARY KEY (follower_id, following_id)
+      );
+    `;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS vp_direct_messages (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        sender_id UUID REFERENCES vp_users(id) ON DELETE CASCADE,
+        receiver_id UUID REFERENCES vp_users(id) ON DELETE CASCADE,
+        content TEXT NOT NULL,
+        media_url VARCHAR(1000),
+        is_read BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
   } catch (error) {
-    console.error('Error writing DB:', error);
+    console.error('Failed to initialize database schema via Vercel Postgres:', error);
   }
 }

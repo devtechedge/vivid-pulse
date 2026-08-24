@@ -1,537 +1,1634 @@
-"use server";
+'use server';
 
-import {
-  readDB,
-  writeDB,
-  Keepsake,
-  Win,
-  FamilyMember,
-  Flower,
-  QuiltSquare,
-  Countdown,
-  SoundAlbum,
-  DiaryEntry,
-  TimeCapsuleJar,
-  TrustedHelper,
-  VaultPhoto,
-  PaperChain,
-  ScrapbookCollab,
-  ScrapbookSticker,
-  PenPalChain,
-  PenPalLetter,
-  CameraPhoto,
-  CookbookProject,
-  CookbookStep,
-  WeavingPhoto,
-  ChallengeBadge,
-  SingalongVoiceClip,
-  CollabFrameProject,
-  PicnicTableState,
-  FrameStroke
-} from './db';
+import { cookies } from 'next/headers';
+import { getDB, saveDB, hashPassword, generateUUID, User, Post, PostMedia, Story, PostLike, Comment, Bookmark, Follow, DirectMessage } from './db';
 
-// Keepsakes
-export async function getKeepsakes(): Promise<Keepsake[]> {
-  const db = readDB();
-  return db.keepsakes || [];
+// Secret key for custom session integrity
+const SESSION_SECRET = 'vividpulse_signing_secret_2026';
+
+// --- SESSION HELPER OPERATIONS ---
+async function generateSessionToken(userId: string): Promise<string> {
+  const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days
+  const data = `${userId}:${expiresAt}`;
+  
+  // Create HMAC-like SHA-256 signature
+  const encoder = new TextEncoder();
+  const rawData = encoder.encode(data + SESSION_SECRET);
+  const sigBuffer = await crypto.subtle.digest('SHA-256', rawData);
+  const sigArray = Array.from(new Uint8Array(sigBuffer));
+  const signature = sigArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+  return `${userId}:${expiresAt}:${signature}`;
 }
 
-export async function addKeepsake(title: string, memory: string, chest: string, imageUrl: string) {
-  const db = readDB();
-  const newItem: Keepsake = {
-    id: 'k_' + Date.now(),
-    title,
-    memory,
-    chest,
-    imageUrl: imageUrl || 'https://images.unsplash.com/photo-1515488042361-404e9250afef?w=400&q=80',
-    createdAt: new Date().toISOString()
-  };
-  db.keepsakes = [newItem, ...(db.keepsakes || [])];
-  writeDB(db);
-  return { success: true, item: newItem };
+async function verifySessionToken(token: string): Promise<string | null> {
+  if (!token) return null;
+  const parts = token.split(':');
+  if (parts.length !== 3) return null;
+
+  const [userId, expiresAtStr, signature] = parts;
+  const expiresAt = parseInt(expiresAtStr, 10);
+  if (isNaN(expiresAt) || expiresAt < Date.now()) return null;
+
+  const data = `${userId}:${expiresAt}`;
+  const encoder = new TextEncoder();
+  const rawData = encoder.encode(data + SESSION_SECRET);
+  const sigBuffer = await crypto.subtle.digest('SHA-256', rawData);
+  const sigArray = Array.from(new Uint8Array(sigBuffer));
+  const expectedSignature = sigArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+  if (signature === expectedSignature) {
+    return userId;
+  }
+  return null;
 }
 
-// Daily Wins
-export async function getWins(): Promise<Win[]> {
-  const db = readDB();
-  return db.wins || [];
+// --- 1. AUTHENTICATION & SECURITY SYSTEM ---
+
+export async function getCurrentUser(): Promise<User | null> {
+  try {
+    const cookieStore = await cookies();
+    const sessionToken = cookieStore.get('vp_session')?.value;
+    if (!sessionToken) return null;
+
+    const userId = await verifySessionToken(sessionToken);
+    if (!userId) return null;
+
+    const db = await getDB();
+    const user = db.users.find(u => u.id === userId);
+    return user || null;
+  } catch {
+    return null;
+  }
 }
 
-export async function addWin(content: string, category: string) {
-  const db = readDB();
-  const newItem: Win = {
-    id: 'w_' + Date.now(),
-    content,
-    category,
-    createdAt: new Date().toISOString()
-  };
-  db.wins = [newItem, ...(db.wins || [])];
-  writeDB(db);
-  return { success: true, item: newItem };
-}
+export async function registerUser(formData: {
+  username: string;
+  email: string;
+  passwordHash: string; // Plain password passed, but we hash it securely inside
+  displayName: string;
+  bio: string;
+}) {
+  try {
+    const db = await getDB();
+    const normalizedUsername = formData.username.trim().toLowerCase();
+    const normalizedEmail = formData.email.trim().toLowerCase();
 
-// Family Members
-export async function getFamily(): Promise<FamilyMember[]> {
-  const db = readDB();
-  return db.family || [];
-}
-
-export async function addFamilyMember(name: string, relationship: string, initialPhotoUrl?: string, initialCaption?: string) {
-  const db = readDB();
-  const photos = initialPhotoUrl ? [{ url: initialPhotoUrl, caption: initialCaption || 'Family photo' }] : [];
-  const newItem: FamilyMember = {
-    id: 'f_' + Date.now(),
-    name,
-    relationship,
-    photos,
-    createdAt: new Date().toISOString()
-  };
-  db.family = [...(db.family || []), newItem];
-  writeDB(db);
-  return { success: true, item: newItem };
-}
-
-export async function addFamilyPhoto(memberId: string, url: string, caption: string) {
-  const db = readDB();
-  db.family = (db.family || []).map(m => {
-    if (m.id === memberId) {
-      return {
-        ...m,
-        photos: [...m.photos, { url, caption }]
-      };
+    // Validations
+    if (!normalizedUsername || normalizedUsername.length < 3) {
+      return { success: false, error: 'Username must be at least 3 characters.' };
     }
-    return m;
-  });
-  writeDB(db);
+    if (!formData.passwordHash || formData.passwordHash.length < 6) {
+      return { success: false, error: 'Password must be at least 6 characters.' };
+    }
+    if (db.users.some(u => u.username === normalizedUsername)) {
+      return { success: false, error: 'Username is already taken.' };
+    }
+    if (db.users.some(u => u.email === normalizedEmail)) {
+      return { success: false, error: 'Email is already registered.' };
+    }
+
+    const hashed = await hashPassword(formData.passwordHash);
+    const newUser: User = {
+      id: generateUUID(),
+      username: normalizedUsername,
+      email: normalizedEmail,
+      passwordHash: hashed,
+      displayName: formData.displayName.trim() || normalizedUsername,
+      bio: formData.bio.trim().substring(0, 150),
+      avatarUrl: `https://picsum.photos/seed/${normalizedUsername}/300/300`,
+      website: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    db.users.push(newUser);
+    await saveDB(db);
+
+    // Auto-login after register
+    const token = await generateSessionToken(newUser.id);
+    const cookieStore = await cookies();
+    cookieStore.set('vp_session', token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      maxAge: 7 * 24 * 60 * 60, // 7 days
+    });
+
+    return { success: true, user: newUser };
+  } catch (error: any) {
+    return { success: false, error: error.message || 'Registration failed.' };
+  }
+}
+
+export async function loginUser(credentials: { usernameOrEmail: string; passwordHash: string }) {
+  try {
+    const db = await getDB();
+    const input = credentials.usernameOrEmail.trim().toLowerCase();
+    const hashed = await hashPassword(credentials.passwordHash);
+
+    const user = db.users.find(u => u.username === input || u.email === input);
+    if (!user) {
+      return { success: false, error: 'Invalid username, email, or password.' };
+    }
+
+    if (user.passwordHash !== hashed) {
+      return { success: false, error: 'Invalid username, email, or password.' };
+    }
+
+    const token = await generateSessionToken(user.id);
+    const cookieStore = await cookies();
+    cookieStore.set('vp_session', token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      maxAge: 7 * 24 * 60 * 60, // 7 days
+    });
+
+    return { success: true, user };
+  } catch (error: any) {
+    return { success: false, error: error.message || 'Login failed.' };
+  }
+}
+
+export async function logoutUser() {
+  const cookieStore = await cookies();
+  cookieStore.delete('vp_session');
   return { success: true };
 }
 
-// Flowers
-export async function getFlowers(): Promise<Flower[]> {
-  const db = readDB();
-  return db.flowers || [];
+
+// --- 2. FEED & POST CAROUSEL SYSTEM ---
+
+export interface FeedPost {
+  id: string;
+  userId: string;
+  username: string;
+  displayName: string;
+  avatarUrl: string | null;
+  caption: string | null;
+  location: string | null;
+  createdAt: string;
+  media: PostMedia[];
+  likesCount: number;
+  commentsCount: number;
+  hasLiked: boolean;
+  hasBookmarked: boolean;
+  isFollowing: boolean;
+  audioUrl?: string | null;
+  audioTitle?: string | null;
+  focalAnchors?: string | null;
+  colorPalette?: string | null;
+  layoutMatrix?: string | null;
+  coAuthors?: string | null;
+  vectorTextPanel?: string | null;
 }
 
-export async function plantFlower(name: string, type: string, note: string) {
-  const db = readDB();
-  const newItem: Flower = {
-    id: 'fl_' + Date.now(),
-    name,
-    type,
-    note,
-    plantedAt: new Date().toISOString()
+export async function getFeed(cursor?: string, limit = 5): Promise<{ posts: FeedPost[]; nextCursor: string | null }> {
+  const db = await getDB();
+  const currentUser = await getCurrentUser();
+
+  // Sort posts by newest first
+  let sortedPosts = [...db.posts].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  // Cursor-based pagination logic
+  let startIndex = 0;
+  if (cursor) {
+    const foundIndex = sortedPosts.findIndex(p => p.id === cursor);
+    if (foundIndex !== -1) {
+      startIndex = foundIndex + 1;
+    }
+  }
+
+  const paginatedPosts = sortedPosts.slice(startIndex, startIndex + limit);
+  const nextCursor = paginatedPosts.length === limit ? paginatedPosts[paginatedPosts.length - 1].id : null;
+
+  const feedPosts: FeedPost[] = paginatedPosts.map(post => {
+    const author = db.users.find(u => u.id === post.userId) || {
+      username: 'anonymous',
+      displayName: 'Anonymous User',
+      avatarUrl: null
+    };
+
+    const media = db.postMedia
+      .filter(m => m.postId === post.id)
+      .sort((a, b) => a.orderIndex - b.orderIndex);
+
+    const likesCount = db.postLikes.filter(l => l.postId === post.id).length;
+    const commentsCount = db.comments.filter(c => c.postId === post.id).length;
+
+    const hasLiked = currentUser ? db.postLikes.some(l => l.postId === post.id && l.userId === currentUser.id) : false;
+    const hasBookmarked = currentUser ? db.bookmarks.some(b => b.postId === post.id && b.userId === currentUser.id) : false;
+    const isFollowing = currentUser ? db.follows.some(f => f.followerId === currentUser.id && f.followingId === post.userId) : false;
+
+    return {
+      id: post.id,
+      userId: post.userId,
+      username: author.username,
+      displayName: author.displayName,
+      avatarUrl: author.avatarUrl,
+      caption: post.caption,
+      location: post.location,
+      createdAt: post.createdAt,
+      media,
+      likesCount,
+      commentsCount,
+      hasLiked,
+      hasBookmarked,
+      isFollowing,
+      audioUrl: post.audioUrl,
+      audioTitle: post.audioTitle,
+      focalAnchors: post.focalAnchors,
+      colorPalette: post.colorPalette,
+      layoutMatrix: post.layoutMatrix,
+      coAuthors: post.coAuthors,
+      vectorTextPanel: post.vectorTextPanel,
+    };
+  });
+
+  return { posts: feedPosts, nextCursor };
+}
+
+export async function createPost(
+  caption: string,
+  location: string,
+  mediaUrls: string[],
+  meta?: {
+    audioUrl?: string | null;
+    audioTitle?: string | null;
+    focalAnchors?: string | null;
+    colorPalette?: string | null;
+    layoutMatrix?: string | null;
+    coAuthors?: string | null;
+    vectorTextPanel?: string | null;
+  }
+) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Unauthorized.' };
+
+  if (!mediaUrls || mediaUrls.length === 0) {
+    return { success: false, error: 'At least one image or video is required.' };
+  }
+
+  const db = await getDB();
+  const newPostId = generateUUID();
+
+  const newPost: Post = {
+    id: newPostId,
+    userId: currentUser.id,
+    caption: caption.trim() || null,
+    location: location.trim() || null,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    audioUrl: meta?.audioUrl || null,
+    audioTitle: meta?.audioTitle || null,
+    focalAnchors: meta?.focalAnchors || null,
+    colorPalette: meta?.colorPalette || null,
+    layoutMatrix: meta?.layoutMatrix || null,
+    coAuthors: meta?.coAuthors || null,
+    vectorTextPanel: meta?.vectorTextPanel || null,
   };
-  db.flowers = [newItem, ...(db.flowers || [])];
-  writeDB(db);
-  return { success: true, item: newItem };
+
+  const newMedia: PostMedia[] = mediaUrls.map((url, index) => ({
+    id: generateUUID(),
+    postId: newPostId,
+    url,
+    type: 'IMAGE',
+    orderIndex: index,
+  }));
+
+  db.posts.push(newPost);
+  db.postMedia.push(...newMedia);
+  await saveDB(db);
+
+  return { success: true, post: newPost };
 }
 
-// Quilts
-export async function getQuilts(): Promise<QuiltSquare[]> {
-  const db = readDB();
-  return db.quilts || [];
+
+// --- 3. EPHEMERAL STORY SYSTEM ---
+
+export interface ActiveStoryTray {
+  userId: string;
+  username: string;
+  avatarUrl: string | null;
+  stories: Story[];
 }
 
-export async function addQuiltSquare(pattern: string, color: string, fabricNote: string, stitchedBy: string) {
-  const db = readDB();
-  const newItem: QuiltSquare = {
-    id: 'q_' + Date.now(),
-    pattern,
-    color,
-    fabricNote,
-    stitchedBy,
-    createdAt: new Date().toISOString()
+export async function getActiveStories(): Promise<ActiveStoryTray[]> {
+  const db = await getDB();
+  const now = new Date().toISOString();
+
+  // Filter out expired stories
+  const activeStories = db.stories.filter(s => s.expiresAt > now);
+
+  // Group by user
+  const userMap = new Map<string, Story[]>();
+  activeStories.forEach(story => {
+    if (!userMap.has(story.userId)) {
+      userMap.set(story.userId, []);
+    }
+    userMap.get(story.userId)!.push(story);
+  });
+
+  const trays: ActiveStoryTray[] = [];
+  
+  // Sort users so that we display them in visual order
+  userMap.forEach((userStories, userId) => {
+    const user = db.users.find(u => u.id === userId);
+    if (user) {
+      trays.push({
+        userId,
+        username: user.username,
+        avatarUrl: user.avatarUrl,
+        stories: userStories.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()),
+      });
+    }
+  });
+
+  return trays;
+}
+
+export async function createStory(
+  mediaUrl: string,
+  mediaType: 'IMAGE' | 'VIDEO' | 'AUDIO_WAVEFORM' | 'TEXT' = 'IMAGE',
+  meta?: {
+    qaQuestion?: string;
+    chainedStoryId?: string;
+    chainName?: string;
+    audioDataUrl?: string;
+    waveformPoints?: number[];
+    latitude?: number;
+    longitude?: number;
+    isGated?: boolean;
+    pollQuestion?: string;
+    pollMinLabel?: string;
+    pollMaxLabel?: string;
+    codeSnippet?: string;
+    codeLanguage?: string;
+    hasAnonymousTerminal?: boolean;
+    hashtags?: string[];
+  }
+) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Unauthorized.' };
+
+  const db = await getDB();
+  const newStory: Story = {
+    id: generateUUID(),
+    userId: currentUser.id,
+    mediaUrl,
+    mediaType,
+    createdAt: new Date().toISOString(),
+    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
+    ...meta,
+    qaAnswers: meta?.qaQuestion ? [] : undefined,
+    pollVotes: meta?.pollQuestion ? [] : undefined,
+    anonymousAnswers: meta?.hasAnonymousTerminal ? [] : undefined,
   };
-  db.quilts = [...(db.quilts || []), newItem];
-  writeDB(db);
-  return { success: true, item: newItem };
+
+  db.stories.push(newStory);
+  await saveDB(db);
+
+  return { success: true, story: newStory };
 }
 
-// Countdowns
-export async function getCountdowns(): Promise<Countdown[]> {
-  const db = readDB();
-  return db.countdowns || [];
+export async function submitStoryQAAnswer(storyId: string, answerText: string) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Unauthorized.' };
+
+  const db = await getDB();
+  const story = db.stories.find(s => s.id === storyId);
+  if (!story) return { success: false, error: 'Story not found.' };
+
+  if (!story.qaAnswers) {
+    story.qaAnswers = [];
+  }
+
+  story.qaAnswers.push({
+    id: generateUUID(),
+    username: currentUser.username,
+    text: answerText.trim(),
+    createdAt: new Date().toISOString(),
+  });
+
+  await saveDB(db);
+  return { success: true, story };
 }
 
-export async function addCountdown(label: string, targetDate: string) {
-  const db = readDB();
-  const newItem: Countdown = {
-    id: 'c_' + Date.now(),
-    label,
-    targetDate,
-    createdAt: new Date().toISOString()
+export async function submitStoryPollVote(storyId: string, score: number) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Unauthorized.' };
+
+  const db = await getDB();
+  const story = db.stories.find(s => s.id === storyId);
+  if (!story) return { success: false, error: 'Story not found.' };
+
+  if (!story.pollVotes) {
+    story.pollVotes = [];
+  }
+
+  const existingIndex = story.pollVotes.findIndex(v => v.username === currentUser.username);
+  if (existingIndex !== -1) {
+    story.pollVotes[existingIndex].score = score;
+  } else {
+    story.pollVotes.push({
+      username: currentUser.username,
+      score,
+    });
+  }
+
+  await saveDB(db);
+  return { success: true, story };
+}
+
+export async function submitStoryAnonymousAnswer(storyId: string, text: string) {
+  const db = await getDB();
+  const story = db.stories.find(s => s.id === storyId);
+  if (!story) return { success: false, error: 'Story not found.' };
+
+  if (!story.anonymousAnswers) {
+    story.anonymousAnswers = [];
+  }
+
+  story.anonymousAnswers.push({
+    id: generateUUID(),
+    text: text.trim(),
+    createdAt: new Date().toISOString(),
+  });
+
+  await saveDB(db);
+  return { success: true, story };
+}
+
+export async function getNarrativeVault(username: string) {
+  const db = await getDB();
+  const user = db.users.find(u => u.username === username);
+  if (!user) return [];
+
+  return db.stories
+    .filter(s => s.userId === user.id && s.hashtags && s.hashtags.length > 0)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
+export async function checkEngagementGated(creatorId: string): Promise<boolean> {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return false;
+  if (currentUser.id === creatorId) return true;
+
+  const db = await getDB();
+  const creatorPostIds = db.posts.filter(p => p.userId === creatorId).map(p => p.id);
+  if (creatorPostIds.length === 0) return false;
+
+  const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+  
+  const hasLiked = db.postLikes.some(l => creatorPostIds.includes(l.postId) && l.userId === currentUser.id);
+  const hasCommented = db.comments.some(c => 
+    creatorPostIds.includes(c.postId) && 
+    c.userId === currentUser.id && 
+    c.createdAt > fortyEightHoursAgo
+  );
+
+  return hasLiked || hasCommented;
+}
+
+
+// --- 4. THREADED ENGAGEMENT HUB (LIKES & COMMENTS) ---
+
+export async function toggleLike(postId: string) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Unauthorized' };
+
+  const db = await getDB();
+  const index = db.postLikes.findIndex(l => l.postId === postId && l.userId === currentUser.id);
+
+  let hasLiked = false;
+  if (index !== -1) {
+    db.postLikes.splice(index, 1);
+  } else {
+    db.postLikes.push({ userId: currentUser.id, postId });
+    hasLiked = true;
+  }
+
+  await saveDB(db);
+  const likesCount = db.postLikes.filter(l => l.postId === postId).length;
+
+  return { success: true, hasLiked, likesCount };
+}
+
+export async function toggleBookmark(postId: string) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Unauthorized' };
+
+  const db = await getDB();
+  const index = db.bookmarks.findIndex(b => b.postId === postId && b.userId === currentUser.id);
+
+  let hasBookmarked = false;
+  if (index !== -1) {
+    db.bookmarks.splice(index, 1);
+  } else {
+    db.bookmarks.push({ userId: currentUser.id, postId });
+    hasBookmarked = true;
+  }
+
+  await saveDB(db);
+  return { success: true, hasBookmarked };
+}
+
+export interface ThreadedComment {
+  id: string;
+  postId: string;
+  userId: string;
+  username: string;
+  displayName: string;
+  avatarUrl: string | null;
+  content: string;
+  parentId: string | null;
+  createdAt: string;
+  replies: ThreadedComment[];
+}
+
+export async function getComments(postId: string): Promise<ThreadedComment[]> {
+  const db = await getDB();
+  
+  const allPostComments = db.comments.filter(c => c.postId === postId);
+  
+  // Format each comment
+  const formattedComments: ThreadedComment[] = allPostComments.map(c => {
+    const user = db.users.find(u => u.id === c.userId) || {
+      username: 'anonymous',
+      displayName: 'Anonymous User',
+      avatarUrl: null
+    };
+
+    return {
+      id: c.id,
+      postId: c.postId,
+      userId: c.userId,
+      username: user.username,
+      displayName: user.displayName,
+      avatarUrl: user.avatarUrl,
+      content: c.content,
+      parentId: c.parentId,
+      createdAt: c.createdAt,
+      replies: [],
+    };
+  });
+
+  // Nest them (2-level depth maximum)
+  const parents = formattedComments.filter(c => c.parentId === null);
+  const children = formattedComments.filter(c => c.parentId !== null);
+
+  parents.forEach(parent => {
+    parent.replies = children
+      .filter(child => child.parentId === parent.id)
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  });
+
+  // Sort parent comments by newest first
+  return parents.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
+export async function addComment(postId: string, content: string, parentId?: string) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Unauthorized' };
+
+  if (!content.trim()) {
+    return { success: false, error: 'Comment content cannot be empty.' };
+  }
+
+  const db = await getDB();
+  const newComment: Comment = {
+    id: generateUUID(),
+    postId,
+    userId: currentUser.id,
+    content: content.trim(),
+    parentId: parentId || null,
+    createdAt: new Date().toISOString(),
   };
-  db.countdowns = [...(db.countdowns || []), newItem];
-  writeDB(db);
-  return { success: true, item: newItem };
+
+  db.comments.push(newComment);
+  await saveDB(db);
+
+  return { success: true, comment: newComment };
 }
 
-// Sound Albums
-export async function getSoundAlbums(): Promise<SoundAlbum[]> {
-  const db = readDB();
-  return db.soundAlbums || [];
+
+// --- 5. DISCOVER & MASONRY ALGORITHMIC GRID ---
+
+export interface DiscoverPost {
+  id: string;
+  imageUrl: string;
+  aspectRatioClass: string; // Dynamic sizes for masonry look
+  likesCount: number;
+  commentsCount: number;
+  caption: string | null;
+  location: string | null;
+  authorUsername: string;
 }
 
-export async function createSoundAlbum(title: string, soundtrack: string, imageUrl: string, description: string) {
-  const db = readDB();
-  const newItem: SoundAlbum = {
-    id: 'sa_' + Date.now(),
+export async function getDiscoverPosts(searchQuery = ''): Promise<DiscoverPost[]> {
+  const db = await getDB();
+  const query = searchQuery.trim().toLowerCase();
+
+  let filteredPosts = db.posts;
+
+  if (query) {
+    filteredPosts = db.posts.filter(post => {
+      const author = db.users.find(u => u.id === post.userId);
+      const inCaption = post.caption?.toLowerCase().includes(query);
+      const inLocation = post.location?.toLowerCase().includes(query);
+      const inUser = author?.username.toLowerCase().includes(query) || author?.displayName.toLowerCase().includes(query);
+      return inCaption || inLocation || inUser;
+    });
+  }
+
+  // Pre-determined aspect ratios to make the masonry grid beautiful and reliable
+  const aspectRatios = [
+    'aspect-square',      // 1:1
+    'aspect-[3/4]',       // Tall
+    'aspect-square',      // 1:1
+    'aspect-[4/5]',       // Portrait
+    'aspect-[3/4]',       // Tall
+    'aspect-square',      // 1:1
+  ];
+
+  return filteredPosts.map((post, index) => {
+    const author = db.users.find(u => u.id === post.userId);
+    const media = db.postMedia.find(m => m.postId === post.id && m.orderIndex === 0);
+    const likesCount = db.postLikes.filter(l => l.postId === post.id).length;
+    const commentsCount = db.comments.filter(c => c.postId === post.id).length;
+
+    return {
+      id: post.id,
+      imageUrl: media?.url || 'https://picsum.photos/seed/placeholder/800/800',
+      aspectRatioClass: aspectRatios[index % aspectRatios.length],
+      likesCount,
+      commentsCount,
+      caption: post.caption,
+      location: post.location,
+      authorUsername: author?.username || 'anonymous',
+    };
+  });
+}
+
+
+// --- 6. DIRECT MESSAGING HUB (POLLING COMPATIBLE) ---
+
+export interface Conversation {
+  otherUser: {
+    id: string;
+    username: string;
+    displayName: string;
+    avatarUrl: string | null;
+  };
+  latestMessage: DirectMessage;
+  unreadCount: number;
+}
+
+export async function getConversations(): Promise<Conversation[]> {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return [];
+
+  const db = await getDB();
+  
+  // Filter all messages where current user is sender or receiver
+  const myMessages = db.directMessages.filter(
+    m => m.senderId === currentUser.id || m.receiverId === currentUser.id
+  );
+
+  // Group by the other user's ID
+  const conversationMap = new Map<string, DirectMessage[]>();
+  myMessages.forEach(msg => {
+    const otherId = msg.senderId === currentUser.id ? msg.receiverId : msg.senderId;
+    if (!conversationMap.has(otherId)) {
+      conversationMap.set(otherId, []);
+    }
+    conversationMap.get(otherId)!.push(msg);
+  });
+
+  const list: Conversation[] = [];
+
+  conversationMap.forEach((messages, otherId) => {
+    const otherUser = db.users.find(u => u.id === otherId);
+    if (otherUser) {
+      // Sort messages to find latest
+      const sorted = [...messages].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      const latestMessage = sorted[0];
+
+      const unreadCount = messages.filter(
+        m => m.receiverId === currentUser.id && !m.isRead
+      ).length;
+
+      list.push({
+        otherUser: {
+          id: otherUser.id,
+          username: otherUser.username,
+          displayName: otherUser.displayName,
+          avatarUrl: otherUser.avatarUrl,
+        },
+        latestMessage,
+        unreadCount,
+      });
+    }
+  });
+
+  // Sort conversations by the latest message's date
+  return list.sort((a, b) => new Date(b.latestMessage.createdAt).getTime() - new Date(a.latestMessage.createdAt).getTime());
+}
+
+export async function getDirectMessages(otherUserId: string): Promise<DirectMessage[]> {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return [];
+
+  const db = await getDB();
+
+  // Fetch messages between currentUser and otherUserId
+  const chatMessages = db.directMessages.filter(
+    m => (m.senderId === currentUser.id && m.receiverId === otherUserId) ||
+         (m.senderId === otherUserId && m.receiverId === currentUser.id)
+  );
+
+  // Mark received messages as read
+  let changed = false;
+  chatMessages.forEach(m => {
+    if (m.receiverId === currentUser.id && !m.isRead) {
+      m.isRead = true;
+      changed = true;
+    }
+  });
+
+  if (changed) {
+    await saveDB(db);
+  }
+
+  // Sort chronologically (oldest to newest)
+  return chatMessages.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+}
+
+export async function sendMessage(
+  receiverId: string, 
+  content: string, 
+  mediaUrl: string | null = null,
+  options?: {
+    isVolatile?: boolean;
+    destructionDelay?: number;
+    parentId?: string;
+    hasAudio?: boolean;
+    audioDuration?: number;
+    audioDataUrl?: string;
+    codeSnippet?: string;
+    codeLanguage?: string;
+  }
+) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Unauthorized' };
+
+  if (!content.trim() && !mediaUrl && !options?.audioDataUrl && !options?.codeSnippet) {
+    return { success: false, error: 'Message cannot be empty.' };
+  }
+
+  const db = await getDB();
+  const expiresAt = options?.isVolatile && options?.destructionDelay 
+    ? new Date(Date.now() + options.destructionDelay * 1000).toISOString()
+    : undefined;
+
+  const newMessage: DirectMessage = {
+    id: generateUUID(),
+    senderId: currentUser.id,
+    receiverId,
+    content: content.trim(),
+    mediaUrl,
+    isRead: false,
+    createdAt: new Date().toISOString(),
+    isVolatile: options?.isVolatile,
+    destructionDelay: options?.destructionDelay,
+    expiresAt,
+    parentId: options?.parentId,
+    hasAudio: options?.hasAudio,
+    audioDuration: options?.audioDuration,
+    audioDataUrl: options?.audioDataUrl,
+    codeSnippet: options?.codeSnippet,
+    codeLanguage: options?.codeLanguage,
+  };
+
+  db.directMessages.push(newMessage);
+  await saveDB(db);
+
+  return { success: true, message: newMessage };
+}
+
+export async function togglePinMessage(messageId: string) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Unauthorized' };
+
+  const db = await getDB();
+  const msg = db.directMessages.find(m => m.id === messageId);
+  if (!msg) return { success: false, error: 'Message not found.' };
+
+  msg.isPinned = !msg.isPinned;
+  await saveDB(db);
+
+  return { success: true, isPinned: msg.isPinned };
+}
+
+export async function deleteMessage(messageId: string) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Unauthorized' };
+
+  const db = await getDB();
+  const initialLen = db.directMessages.length;
+  db.directMessages = db.directMessages.filter(m => m.id !== messageId);
+  
+  if (db.directMessages.length !== initialLen) {
+    await saveDB(db);
+    return { success: true };
+  }
+  return { success: false, error: 'Message not found' };
+}
+
+export async function sendMultiRecipientBlast(
+  receiverIds: string[], 
+  content: string, 
+  options?: { codeSnippet?: string; codeLanguage?: string }
+) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Unauthorized' };
+
+  if (receiverIds.length === 0) return { success: false, error: 'No recipients specified.' };
+  if (receiverIds.length > 50) return { success: false, error: 'Cannot blast to more than 50 recipients concurrently.' };
+
+  const db = await getDB();
+  const sentMessages: DirectMessage[] = [];
+
+  for (const rId of receiverIds) {
+    const newMessage: DirectMessage = {
+      id: generateUUID(),
+      senderId: currentUser.id,
+      receiverId: rId,
+      content: content.trim(),
+      mediaUrl: null,
+      isRead: false,
+      createdAt: new Date().toISOString(),
+      codeSnippet: options?.codeSnippet,
+      codeLanguage: options?.codeLanguage,
+    };
+    db.directMessages.push(newMessage);
+    sentMessages.push(newMessage);
+  }
+
+  await saveDB(db);
+  return { success: true, count: sentMessages.length };
+}
+
+export interface LinkPreviewData {
+  url: string;
+  title: string;
+  description: string;
+  image?: string;
+  isCodeAsset?: boolean;
+  codeLanguage?: string;
+  codeSample?: string;
+}
+
+export async function resolveLinkPreview(url: string): Promise<LinkPreviewData> {
+  const normalizedUrl = url.trim().toLowerCase();
+  
+  let isCodeAsset = false;
+  let codeLanguage = 'javascript';
+  let codeSample = '';
+  let title = 'Web Resource Link';
+  let description = 'Unpacked secure payload snippet from the remote frame.';
+  let image = 'https://picsum.photos/seed/link_preview/400/250';
+
+  if (normalizedUrl.endsWith('.js') || (normalizedUrl.includes('github.com') && normalizedUrl.includes('.js'))) {
+    isCodeAsset = true;
+    codeLanguage = 'javascript';
+    title = 'Shinjuku Reflection Tracker Script';
+    description = 'Source script evaluating relative coordinate vectors in generative neon matrices.';
+    codeSample = `// Vector reflection formula
+function reflectVector(incident, normal) {
+  const dot = incident.x * normal.x + incident.y * normal.y;
+  return {
+    x: incident.x - 2 * dot * normal.x,
+    y: incident.y - 2 * dot * normal.y
+  };
+}
+console.log("Vector Reflect loaded!");`;
+  } else if (normalizedUrl.endsWith('.ts') || normalizedUrl.endsWith('.tsx') || normalizedUrl.includes('/schema') || normalizedUrl.includes('/actions')) {
+    isCodeAsset = true;
+    codeLanguage = 'typescript';
+    title = 'Database Connection Manager schema';
+    description = 'Standard Drizzle connection interface configuring Postgres storage.';
+    codeSample = `export interface DatabaseConfig {
+  host: string;
+  port: number;
+  secure: boolean;
+}
+export class SecureNodePool {
+  private activeConnections = 0;
+  constructor(private config: DatabaseConfig) {}
+  connect() { this.activeConnections++; }
+}`;
+  } else if (normalizedUrl.endsWith('.css') || normalizedUrl.includes('tailwind')) {
+    isCodeAsset = true;
+    codeLanguage = 'css';
+    title = 'Vaporwave Neon Theme stylesheet';
+    description = 'Custom global style specifications driving interactive color pulses.';
+    codeSample = `@keyframes neonPulse {
+  0%, 100% { filter: drop-shadow(0 0 2px #ec4899); }
+  50% { filter: drop-shadow(0 0 12px #a855f7); }
+}
+.neon-pulse {
+  animation: neonPulse 2s infinite ease-in-out;
+}`;
+  } else if (normalizedUrl.endsWith('.py')) {
+    isCodeAsset = true;
+    codeLanguage = 'python';
+    title = 'Spectral Analysis Matrix model';
+    description = 'Python script classifying visual feeds via deep learning weights.';
+    codeSample = `import numpy as np
+
+def extract_colors(image_path, num_clusters=5):
+    # Simulating K-means clustering on neon pixels
+    print(f"Clustering {image_path} coordinates...")
+    return np.random.rand(num_clusters, 3) * 255`;
+  } else if (normalizedUrl.includes('github.com')) {
+    title = 'GitHub Repository - neon-canvas-vivid';
+    description = 'Open-source web animations render loop built on dynamic canvas anchors.';
+    image = 'https://picsum.photos/seed/github/400/250';
+  } else if (normalizedUrl.includes('stackoverflow.com')) {
+    title = 'Stack Overflow: How to safely handle React context in concurrent rendering?';
+    description = 'Discussion on resolving state cascades and hooks in high-frequency short-poll networks.';
+  } else if (normalizedUrl.includes('figma.com')) {
+    title = 'Figma Design Board - VividPulse Web App';
+    description = 'Prototype layouts, color guidelines, and interactive high-contrast buttons.';
+  } else if (normalizedUrl.includes('picsum.photos') || normalizedUrl.includes('unsplash.com')) {
+    title = 'Rich Visual Media Stream Asset';
+    description = 'External high-definition media rendering inside conversation thread.';
+    image = url;
+  }
+
+  return {
+    url,
     title,
-    soundtrack,
-    imageUrl: imageUrl || 'https://images.unsplash.com/photo-1452570053594-1b985d6ea890?w=400&q=80',
+    description,
+    image,
+    isCodeAsset,
+    codeLanguage,
+    codeSample,
+  };
+}
+
+
+// --- 7. PROFILE DASHBOARD & CREATOR ANALYTICS ---
+
+export interface ProfileDetails {
+  user: User;
+  postsCount: number;
+  followersCount: number;
+  followingCount: number;
+  isFollowing: boolean;
+  isSelf: boolean;
+  posts: FeedPost[];
+  bookmarks: FeedPost[];
+}
+
+export async function getUserProfile(username: string): Promise<ProfileDetails | null> {
+  const db = await getDB();
+  const normalizedUsername = username.toLowerCase().trim();
+
+  const user = db.users.find(u => u.username === normalizedUsername);
+  if (!user) return null;
+
+  const currentUser = await getCurrentUser();
+  const isSelf = currentUser ? currentUser.id === user.id : false;
+
+  const postsCount = db.posts.filter(p => p.userId === user.id).length;
+  const followersCount = db.follows.filter(f => f.followingId === user.id).length;
+  const followingCount = db.follows.filter(f => f.followerId === user.id).length;
+
+  const isFollowing = currentUser 
+    ? db.follows.some(f => f.followerId === currentUser.id && f.followingId === user.id) 
+    : false;
+
+  // Gather user's posts
+  const userPosts = db.posts
+    .filter(p => p.userId === user.id)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  const formattedPosts: FeedPost[] = userPosts.map(post => {
+    const media = db.postMedia.filter(m => m.postId === post.id).sort((a, b) => a.orderIndex - b.orderIndex);
+    const likesCount = db.postLikes.filter(l => l.postId === post.id).length;
+    const commentsCount = db.comments.filter(c => c.postId === post.id).length;
+    const hasLiked = currentUser ? db.postLikes.some(l => l.postId === post.id && l.userId === currentUser.id) : false;
+    const hasBookmarked = currentUser ? db.bookmarks.some(b => b.postId === post.id && b.userId === currentUser.id) : false;
+
+    return {
+      id: post.id,
+      userId: post.userId,
+      username: user.username,
+      displayName: user.displayName,
+      avatarUrl: user.avatarUrl,
+      caption: post.caption,
+      location: post.location,
+      createdAt: post.createdAt,
+      media,
+      likesCount,
+      commentsCount,
+      hasLiked,
+      hasBookmarked,
+      isFollowing,
+    };
+  });
+
+  // Gather saved posts (only visible on own profile)
+  let savedPosts: FeedPost[] = [];
+  if (isSelf && currentUser) {
+    const myBookmarks = db.bookmarks.filter(b => b.userId === currentUser.id);
+    savedPosts = myBookmarks.map(b => {
+      const p = db.posts.find(post => post.id === b.postId)!;
+      if (!p) return null;
+      const author = db.users.find(u => u.id === p.userId)!;
+      const media = db.postMedia.filter(m => m.postId === p.id).sort((x, y) => x.orderIndex - y.orderIndex);
+      const likesCount = db.postLikes.filter(l => l.postId === p.id).length;
+      const commentsCount = db.comments.filter(c => c.postId === p.id).length;
+      const hasLiked = db.postLikes.some(l => l.postId === p.id && l.userId === currentUser.id);
+
+      return {
+        id: p.id,
+        userId: p.userId,
+        username: author.username,
+        displayName: author.displayName,
+        avatarUrl: author.avatarUrl,
+        caption: p.caption,
+        location: p.location,
+        createdAt: p.createdAt,
+        media,
+        likesCount,
+        commentsCount,
+        hasLiked,
+        hasBookmarked: true,
+        isFollowing: db.follows.some(f => f.followerId === currentUser.id && f.followingId === p.userId),
+      };
+    }).filter(Boolean) as FeedPost[];
+  }
+
+  return {
+    user,
+    postsCount,
+    followersCount,
+    followingCount,
+    isFollowing,
+    isSelf,
+    posts: formattedPosts,
+    bookmarks: savedPosts,
+  };
+}
+
+export interface CreatorAnalytics {
+  totalLikes: number;
+  totalComments: number;
+  avgEngagementRate: number;
+  topPerformingPost: {
+    id: string;
+    caption: string | null;
+    imageUrl: string;
+    likesCount: number;
+    commentsCount: number;
+  } | null;
+  growthMetrics: {
+    label: string;
+    value: string | number;
+  }[];
+}
+
+export async function getCreatorAnalytics(userId: string): Promise<CreatorAnalytics> {
+  const db = await getDB();
+  const myPosts = db.posts.filter(p => p.userId === userId);
+  
+  let totalLikes = 0;
+  let totalComments = 0;
+  let topPost: Post | null = null;
+  let maxEngagement = -1;
+
+  myPosts.forEach(post => {
+    const postLikesCount = db.postLikes.filter(l => l.postId === post.id).length;
+    const postCommentsCount = db.comments.filter(c => c.postId === post.id).length;
+
+    totalLikes += postLikesCount;
+    totalComments += postCommentsCount;
+
+    const engagement = postLikesCount + postCommentsCount;
+    if (engagement > maxEngagement) {
+      maxEngagement = engagement;
+      topPost = post;
+    }
+  });
+
+  const followersCount = db.follows.filter(f => f.followingId === userId).length;
+  const avgEngagementRate = myPosts.length > 0 
+    ? parseFloat(((totalLikes + totalComments) / myPosts.length).toFixed(1)) 
+    : 0;
+
+  let topPerformingPost: CreatorAnalytics['topPerformingPost'] = null;
+  if (topPost) {
+    const media = db.postMedia.find(m => m.postId === (topPost as Post).id);
+    topPerformingPost = {
+      id: (topPost as Post).id,
+      caption: (topPost as Post).caption,
+      imageUrl: media?.url || 'https://picsum.photos/seed/placeholder/800/800',
+      likesCount: db.postLikes.filter(l => l.postId === (topPost as Post).id).length,
+      commentsCount: db.comments.filter(c => c.postId === (topPost as Post).id).length,
+    };
+  }
+
+  return {
+    totalLikes,
+    totalComments,
+    avgEngagementRate,
+    topPerformingPost,
+    growthMetrics: [
+      { label: 'Follower Count', value: followersCount },
+      { label: 'Total Visual Content', value: myPosts.length },
+      { label: 'Average Interaction', value: `${avgEngagementRate} pts` },
+      { label: 'Profile Authority', value: followersCount > 3 ? 'Elite Visualizer' : 'Growing Pulse' }
+    ]
+  };
+}
+
+export async function toggleFollow(followingId: string) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Unauthorized' };
+
+  if (currentUser.id === followingId) {
+    return { success: false, error: 'You cannot follow yourself.' };
+  }
+
+  const db = await getDB();
+  const index = db.follows.findIndex(f => f.followerId === currentUser.id && f.followingId === followingId);
+
+  let isFollowing = false;
+  if (index !== -1) {
+    db.follows.splice(index, 1);
+  } else {
+    db.follows.push({ followerId: currentUser.id, followingId });
+    isFollowing = true;
+  }
+
+  await saveDB(db);
+  return { success: true, isFollowing };
+}
+
+// Simple Vercel Blob mock function for client images
+export async function mockUploadImage(base64Data: string): Promise<string> {
+  // Simulates Vercel Blob intake and returns a high fidelity url
+  // For the UI, we can just return the local base64 or a randomized picsum image with new seed so it works fully offline/locally!
+  // To keep it clean, we can save the custom uploaded image in our global server database
+  // or return the base64 itself (since next image handles standard base64/data URLs perfectly!)
+  return base64Data;
+}
+
+// --- COZY NEIGHBORS & WARM COMMUNITY ACTIONS ---
+
+export async function getNeighbors() {
+  const db = await getDB();
+  const currentUser = await getCurrentUser();
+
+  // Initialize arrays if they don't exist yet
+  if (!db.neighborMoods) db.neighborMoods = [];
+  if (!db.neighborWaves) db.neighborWaves = [];
+
+  // Map users with mood information and waves
+  return db.users.map(user => {
+    const mood = db.neighborMoods?.find(m => m.userId === user.id) || {
+      vibeEmoji: '👋',
+      vibeLabel: 'Available for a chat'
+    };
+    
+    // Wave greeting counts to this user from current user or others
+    const totalNudgesReceived = db.neighborWaves?.filter(w => w.receiverId === user.id).length || 0;
+    const hasNudged = currentUser ? db.neighborWaves?.some(w => w.senderId === currentUser.id && w.receiverId === user.id) : false;
+
+    return {
+      id: user.id,
+      username: user.username,
+      displayName: user.displayName,
+      avatarUrl: user.avatarUrl,
+      bio: user.bio,
+      vibeEmoji: mood.vibeEmoji,
+      vibeLabel: mood.vibeLabel,
+      totalNudgesReceived,
+      hasNudged
+    };
+  });
+}
+
+export async function sendNeighborNudge(receiverId: string, nudgeType: string) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Please log in to send warm vibes!' };
+
+  if (currentUser.id === receiverId) {
+    return { success: false, error: 'You are already filled with cozy thoughts!' };
+  }
+
+  const db = await getDB();
+  if (!db.neighborWaves) db.neighborWaves = [];
+
+  // Register the new wave/hug/tea nudge
+  const newNudge = {
+    id: generateUUID(),
+    senderId: currentUser.id,
+    receiverId,
+    type: nudgeType,
+    createdAt: new Date().toISOString()
+  };
+
+  db.neighborWaves.push(newNudge);
+  await saveDB(db);
+
+  return { success: true, nudge: newNudge };
+}
+
+export async function updateNeighborMood(vibeEmoji: string, vibeLabel: string) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Unauthorized' };
+
+  const db = await getDB();
+  if (!db.neighborMoods) db.neighborMoods = [];
+
+  const existingMoodIdx = db.neighborMoods.findIndex(m => m.userId === currentUser.id);
+  const now = new Date().toISOString();
+
+  if (existingMoodIdx !== -1) {
+    db.neighborMoods[existingMoodIdx] = {
+      userId: currentUser.id,
+      vibeEmoji,
+      vibeLabel,
+      updatedAt: now
+    };
+  } else {
+    db.neighborMoods.push({
+      userId: currentUser.id,
+      vibeEmoji,
+      vibeLabel,
+      updatedAt: now
+    });
+  }
+
+  await saveDB(db);
+  return { success: true };
+}
+
+export async function getBulletins() {
+  const db = await getDB();
+  if (!db.neighborBulletins) db.neighborBulletins = [];
+
+  // Enriched with author details
+  const enriched = db.neighborBulletins.map(bulletin => {
+    const author = db.users.find(u => u.id === bulletin.userId) || {
+      username: 'neighbor',
+      displayName: 'Cozy Neighbor',
+      avatarUrl: null
+    };
+
+    return {
+      ...bulletin,
+      username: author.username,
+      displayName: author.displayName,
+      avatarUrl: author.avatarUrl
+    };
+  });
+
+  // Newest first
+  return enriched.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
+export async function createBulletin(content: string, color: string) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Please sign in to pin a sticky note.' };
+
+  const db = await getDB();
+  if (!db.neighborBulletins) db.neighborBulletins = [];
+
+  const newBulletin = {
+    id: generateUUID(),
+    userId: currentUser.id,
+    content,
+    color,
+    createdAt: new Date().toISOString()
+  };
+
+  db.neighborBulletins.push(newBulletin);
+  await saveDB(db);
+
+  return { success: true, bulletin: newBulletin };
+}
+
+export async function getCozyStrolls() {
+  const db = await getDB();
+  if (!db.cozyStrolls) db.cozyStrolls = [];
+
+  const enriched = db.cozyStrolls.map(stroll => {
+    const author = db.users.find(u => u.id === stroll.userId) || {
+      username: 'neighbor',
+      displayName: 'Cozy Neighbor',
+      avatarUrl: null
+    };
+
+    return {
+      ...stroll,
+      username: author.username,
+      displayName: author.displayName,
+      avatarUrl: author.avatarUrl
+    };
+  });
+
+  return enriched.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+}
+
+export async function createCozyStroll(title: string, time: string, location: string) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Please log in to schedule a stroll!' };
+
+  const db = await getDB();
+  if (!db.cozyStrolls) db.cozyStrolls = [];
+
+  const newStroll = {
+    id: generateUUID(),
+    userId: currentUser.id,
+    title,
+    time,
+    location,
+    attendees: [currentUser.username],
+    createdAt: new Date().toISOString()
+  };
+
+  db.cozyStrolls.push(newStroll);
+  await saveDB(db);
+
+  return { success: true, stroll: newStroll };
+}
+
+export async function joinCozyStroll(strollId: string) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Please log in to join!' };
+
+  const db = await getDB();
+  if (!db.cozyStrolls) db.cozyStrolls = [];
+
+  const stroll = db.cozyStrolls.find(s => s.id === strollId);
+  if (!stroll) return { success: false, error: 'Stroll not found' };
+
+  if (stroll.attendees.includes(currentUser.username)) {
+    // Leave stroll
+    stroll.attendees = stroll.attendees.filter(u => u !== currentUser.username);
+  } else {
+    // Join stroll
+    stroll.attendees.push(currentUser.username);
+  }
+
+  await saveDB(db);
+  return { success: true, attendees: stroll.attendees };
+}
+
+export async function getSkySnapshots() {
+  const db = await getDB();
+  if (!db.skySnapshots) db.skySnapshots = [];
+
+  const enriched = db.skySnapshots.map(sky => {
+    const author = db.users.find(u => u.id === sky.userId) || {
+      username: 'neighbor',
+      displayName: 'Cozy Neighbor',
+      avatarUrl: null
+    };
+
+    return {
+      ...sky,
+      username: author.username,
+      displayName: author.displayName,
+      avatarUrl: author.avatarUrl
+    };
+  });
+
+  return enriched.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
+export async function createSkySnapshot(imageUrl: string, description: string) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Please log in to share the sky!' };
+
+  const db = await getDB();
+  if (!db.skySnapshots) db.skySnapshots = [];
+
+  const newSky = {
+    id: generateUUID(),
+    userId: currentUser.id,
+    imageUrl,
     description,
     createdAt: new Date().toISOString()
   };
-  db.soundAlbums = [...(db.soundAlbums || []), newItem];
-  writeDB(db);
-  return { success: true, item: newItem };
+
+  db.skySnapshots.push(newSky);
+  await saveDB(db);
+
+  return { success: true, sky: newSky };
 }
 
-// Leather Diary Entries
-export async function getLeatherDiaryEntries(): Promise<DiaryEntry[]> {
-  const db = readDB();
-  return db.diaryEntries || [];
-}
+export async function getCookieJarTreats() {
+  const db = await getDB();
+  if (!db.cookieJarTreats) db.cookieJarTreats = [];
 
-export async function createLeatherDiaryEntry(title: string, content: string, theme: string) {
-  const db = readDB();
-  const newItem: DiaryEntry = {
-    id: 'd_' + Date.now(),
-    title,
-    content,
-    theme,
-    createdAt: new Date().toISOString()
-  };
-  db.diaryEntries = [newItem, ...(db.diaryEntries || [])];
-  writeDB(db);
-  return { success: true, item: newItem };
-}
-
-// Time Capsule Jars
-export async function getTimeCapsuleJars(): Promise<TimeCapsuleJar[]> {
-  const db = readDB();
-  return db.jars || [];
-}
-
-export async function createTimeCapsuleJar(title: string, message: string, unlockYear: number) {
-  const db = readDB();
-  const newItem: TimeCapsuleJar = {
-    id: 'tc_' + Date.now(),
-    title,
-    message,
-    unlockYear,
-    createdAt: new Date().toISOString()
-  };
-  db.jars = [...(db.jars || []), newItem];
-  writeDB(db);
-  return { success: true, item: newItem };
-}
-
-// Trusted Helpers
-export async function getTrustedHelpers(): Promise<TrustedHelper[]> {
-  const db = readDB();
-  return db.trustedHelpers || [];
-}
-
-export async function addTrustedHelper(name: string, relationship: string) {
-  const db = readDB();
-  const newItem: TrustedHelper = {
-    id: 'th_' + Date.now(),
-    name,
-    relationship,
-    createdAt: new Date().toISOString()
-  };
-  db.trustedHelpers = [...(db.trustedHelpers || []), newItem];
-  writeDB(db);
-  return { success: true, item: newItem };
-}
-
-// Vault Photos
-export async function getVaultPhotos(): Promise<VaultPhoto[]> {
-  const db = readDB();
-  return db.vaultPhotos || [];
-}
-
-export async function addVaultPhoto(imageUrl: string, caption: string) {
-  const db = readDB();
-  const newItem: VaultPhoto = {
-    id: 'vp_' + Date.now(),
-    imageUrl,
-    caption,
-    createdAt: new Date().toISOString()
-  };
-  db.vaultPhotos = [newItem, ...(db.vaultPhotos || [])];
-  writeDB(db);
-  return { success: true, item: newItem };
-}
-
-// Paper Chains
-export async function getPaperChains(): Promise<PaperChain[]> {
-  const db = readDB();
-  return db.paperChains || [];
-}
-
-export async function createPaperChain(message: string, author: string) {
-  const db = readDB();
-  const newItem: PaperChain = {
-    id: 'pc_' + Date.now(),
-    message,
-    author,
-    createdAt: new Date().toISOString()
-  };
-  db.paperChains = [...(db.paperChains || []), newItem];
-  writeDB(db);
-  return { success: true, item: newItem };
-}
-
-// BATCH 10 Server Actions
-
-// 1. Scrapbook Collabs
-export async function getScrapbooks(): Promise<ScrapbookCollab[]> {
-  const db = readDB();
-  return db.scrapbooks || [];
-}
-
-export async function createScrapbook(title: string, photoUrl: string) {
-  const db = readDB();
-  const newItem: ScrapbookCollab = {
-    id: 'sb_' + Date.now(),
-    title,
-    photoUrl,
-    stickers: [],
-    createdAt: new Date().toISOString()
-  };
-  db.scrapbooks = [newItem, ...(db.scrapbooks || [])];
-  writeDB(db);
-  return { success: true, item: newItem };
-}
-
-export async function addScrapbookSticker(scrapbookId: string, sticker: Omit<ScrapbookSticker, 'id'>) {
-  const db = readDB();
-  db.scrapbooks = (db.scrapbooks || []).map(sb => {
-    if (sb.id === scrapbookId) {
-      const newSticker: ScrapbookSticker = {
-        ...sticker,
-        id: 's_' + Date.now() + '_' + Math.floor(Math.random() * 1000)
-      };
-      return {
-        ...sb,
-        stickers: [...sb.stickers, newSticker]
-      };
-    }
-    return sb;
-  });
-  writeDB(db);
-  return { success: true };
-}
-
-// 2. Nostalgic Pen Pal Chains
-export async function getPenPals(): Promise<PenPalChain[]> {
-  const db = readDB();
-  return db.penPals || [];
-}
-
-export async function createPenPalChain(question: string) {
-  const db = readDB();
-  const newItem: PenPalChain = {
-    id: 'pp_' + Date.now(),
-    question,
-    letters: [],
-    activeAuthor: 'Grandma Green',
-    createdAt: new Date().toISOString()
-  };
-  db.penPals = [newItem, ...(db.penPals || [])];
-  writeDB(db);
-  return { success: true, item: newItem };
-}
-
-export async function addPenPalLetter(chainId: string, text: string, author: string) {
-  const db = readDB();
-  db.penPals = (db.penPals || []).map(pp => {
-    if (pp.id === chainId) {
-      const newLetter: PenPalLetter = {
-        id: 'l_' + Date.now(),
-        author,
-        text,
-        createdAt: new Date().toISOString()
-      };
-      // Toggle active author based on who just wrote
-      const nextAuthor = author === 'Grandma Green' ? 'Arthur Green' : 'Grandma Green';
-      return {
-        ...pp,
-        activeAuthor: nextAuthor,
-        letters: [...pp.letters, newLetter]
-      };
-    }
-    return pp;
-  });
-  writeDB(db);
-  return { success: true };
-}
-
-// 3. Pass-the-Camera Game
-export async function getCameraPhotos(): Promise<CameraPhoto[]> {
-  const db = readDB();
-  return db.cameraPhotos || [];
-}
-
-export async function addCameraPhoto(url: string, caption: string, color: string, submittedBy: string) {
-  const db = readDB();
-  const newItem: CameraPhoto = {
-    id: 'cp_' + Date.now(),
-    url,
-    caption,
-    color,
-    submittedBy,
-    createdAt: new Date().toISOString()
-  };
-  db.cameraPhotos = [newItem, ...(db.cameraPhotos || [])];
-  writeDB(db);
-  return { success: true, item: newItem };
-}
-
-// 4. Community Cookbook Patchwork
-export async function getCookbook(): Promise<CookbookProject> {
-  const db = readDB();
-  return db.cookbook;
-}
-
-export async function addCookbookStep(photoUrl: string, instruction: string, contributedBy: string) {
-  const db = readDB();
-  if (!db.cookbook) {
-    db.cookbook = {
-      id: 'cb1',
-      title: 'Blueberry Pie Collective Stitch',
-      description: 'A baking masterclass compiled step-by-step by the family.',
-      steps: []
+  const enriched = db.cookieJarTreats.map(treat => {
+    const author = db.users.find(u => u.id === treat.userId) || {
+      username: 'neighbor',
+      displayName: 'Cozy Neighbor',
+      avatarUrl: null
     };
+
+    return {
+      ...treat,
+      username: author.username,
+      displayName: author.displayName,
+      avatarUrl: author.avatarUrl
+    };
+  });
+
+  return enriched.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
+export async function createCookieJarTreat(title: string, description: string, totalPortions: number) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Please sign in to share a treat!' };
+
+  const db = await getDB();
+  if (!db.cookieJarTreats) db.cookieJarTreats = [];
+
+  const newTreat = {
+    id: generateUUID(),
+    userId: currentUser.id,
+    title,
+    description,
+    totalPortions,
+    claimedByUsernames: [],
+    createdAt: new Date().toISOString()
+  };
+
+  db.cookieJarTreats.push(newTreat);
+  await saveDB(db);
+
+  return { success: true, treat: newTreat };
+}
+
+export async function claimCookieJarTreat(treatId: string) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Please sign in to stop by!' };
+
+  const db = await getDB();
+  if (!db.cookieJarTreats) db.cookieJarTreats = [];
+
+  const treat = db.cookieJarTreats.find(t => t.id === treatId);
+  if (!treat) return { success: false, error: 'Treat not found' };
+
+  if (treat.claimedByUsernames.includes(currentUser.username)) {
+    return { success: false, error: 'You have already secured a slice of this treat!' };
   }
-  const nextStepNum = (db.cookbook.steps || []).length + 1;
-  const newStep: CookbookStep = {
-    id: 'cbs_' + Date.now(),
-    stepNumber: nextStepNum,
-    photoUrl,
-    instruction,
-    contributedBy,
-    createdAt: new Date().toISOString()
-  };
-  db.cookbook.steps = [...(db.cookbook.steps || []), newStep];
-  writeDB(db);
-  return { success: true, item: newStep };
+
+  if (treat.claimedByUsernames.length >= treat.totalPortions) {
+    return { success: false, error: 'Aww, all slices have already been enjoyed!' };
+  }
+
+  treat.claimedByUsernames.push(currentUser.username);
+  await saveDB(db);
+
+  return { success: true, claimedByUsernames: treat.claimedByUsernames };
 }
 
-// 5. Scenic Color Weaving
-export async function getWeavingPhotos(): Promise<WeavingPhoto[]> {
-  const db = readDB();
-  return db.weavingPhotos || [];
-}
+export async function getWisdomReflections() {
+  const db = await getDB();
+  if (!db.wisdomReflections) db.wisdomReflections = [];
 
-export async function addWeavingPhoto(url: string, colorTheme: 'green' | 'amber' | 'blue' | 'rose' | 'slate', scenery: string, uploadedBy: string) {
-  const db = readDB();
-  const newItem: WeavingPhoto = {
-    id: 'wp_' + Date.now(),
-    url,
-    colorTheme,
-    scenery,
-    uploadedBy,
-    createdAt: new Date().toISOString()
-  };
-  db.weavingPhotos = [newItem, ...(db.weavingPhotos || [])];
-  writeDB(db);
-  return { success: true, item: newItem };
-}
+  const enriched = db.wisdomReflections.map(wisdom => {
+    const author = db.users.find(u => u.id === wisdom.userId) || {
+      username: 'neighbor',
+      displayName: 'Cozy Neighbor',
+      avatarUrl: null
+    };
 
-// 6. Family Challenge Badges
-export async function getChallengeBadges(): Promise<ChallengeBadge[]> {
-  const db = readDB();
-  return db.badges || [];
-}
-
-export async function unlockBadge(badgeId: string, unlockedBy: string, proofText: string, proofPhoto?: string) {
-  const db = readDB();
-  db.badges = (db.badges || []).map(b => {
-    if (b.id === badgeId) {
-      return {
-        ...b,
-        isUnlocked: true,
-        unlockedBy,
-        proofText,
-        proofPhoto,
-        unlockedAt: new Date().toISOString()
-      };
-    }
-    return b;
+    return {
+      ...wisdom,
+      username: author.username,
+      displayName: author.displayName,
+      avatarUrl: author.avatarUrl
+    };
   });
-  writeDB(db);
-  return { success: true };
+
+  return enriched.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
 
-// 7. Nostalgic Singalong Choir
-export async function getVoiceClips(): Promise<SingalongVoiceClip[]> {
-  const db = readDB();
-  return db.voiceClips || [];
-}
+export async function createWisdomReflection(prompt: string, text: string) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Please log in to share wisdom!' };
 
-export async function addVoiceClip(member: string, synthNotes: number[]) {
-  const db = readDB();
-  const newItem: SingalongVoiceClip = {
-    id: 'vc_' + Date.now(),
-    member,
-    synthNotes,
-    duration: 4,
+  const db = await getDB();
+  if (!db.wisdomReflections) db.wisdomReflections = [];
+
+  const newWisdom = {
+    id: generateUUID(),
+    userId: currentUser.id,
+    prompt,
+    text,
     createdAt: new Date().toISOString()
   };
-  db.voiceClips = [...(db.voiceClips || []), newItem];
-  writeDB(db);
-  return { success: true, item: newItem };
+
+  db.wisdomReflections.push(newWisdom);
+  await saveDB(db);
+
+  return { success: true, wisdom: newWisdom };
 }
 
-// 8. Collaborative Hand-Painted Frames
-export async function getFrameProjects(): Promise<CollabFrameProject[]> {
-  const db = readDB();
-  return db.frameProjects || [];
-}
+export async function getHelpingHandPosts() {
+  const db = await getDB();
+  if (!db.helpingHandPosts) db.helpingHandPosts = [];
 
-export async function addFrameStroke(projectId: string, stroke: FrameStroke) {
-  const db = readDB();
-  db.frameProjects = (db.frameProjects || []).map(fp => {
-    if (fp.id === projectId) {
-      return {
-        ...fp,
-        strokes: [...(fp.strokes || []), stroke]
-      };
-    }
-    return fp;
+  const enriched = db.helpingHandPosts.map(post => {
+    const author = db.users.find(u => u.id === post.userId) || {
+      username: 'neighbor',
+      displayName: 'Cozy Neighbor',
+      avatarUrl: null
+    };
+
+    return {
+      ...post,
+      username: author.username,
+      displayName: author.displayName,
+      avatarUrl: author.avatarUrl
+    };
   });
-  writeDB(db);
-  return { success: true };
+
+  return enriched.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
 
-export async function createFrameProject(photoUrl: string) {
-  const db = readDB();
-  const newItem: CollabFrameProject = {
-    id: 'fp_' + Date.now(),
-    photoUrl,
-    strokes: []
+export async function createHelpingHandPost(title: string, description: string, type: 'need' | 'offer') {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Please log in to post!' };
+
+  const db = await getDB();
+  if (!db.helpingHandPosts) db.helpingHandPosts = [];
+
+  const newPost = {
+    id: generateUUID(),
+    userId: currentUser.id,
+    title,
+    description,
+    type,
+    createdAt: new Date().toISOString()
   };
-  db.frameProjects = [newItem, ...(db.frameProjects || [])];
-  writeDB(db);
-  return { success: true, item: newItem };
+
+  db.helpingHandPosts.push(newPost);
+  await saveDB(db);
+
+  return { success: true, post: newPost };
 }
 
-// 9. Picnic Table Room State
-export async function getPicnicTable(): Promise<PicnicTableState> {
-  const db = readDB();
-  return db.picnicTable;
+export async function getNeighborhoodSounds() {
+  const db = await getDB();
+  if (!db.neighborhoodSounds) db.neighborhoodSounds = [];
+
+  const enriched = db.neighborhoodSounds.map(sound => {
+    const author = db.users.find(u => u.id === sound.userId) || {
+      username: 'neighbor',
+      displayName: 'Cozy Neighbor',
+      avatarUrl: null
+    };
+
+    return {
+      ...sound,
+      username: author.username,
+      displayName: author.displayName,
+      avatarUrl: author.avatarUrl
+    };
+  });
+
+  return enriched.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
 
-export async function updatePicnicTable(photoUrl: string, activeSeats: Record<string, string>, backgroundSound: string) {
-  const db = readDB();
-  db.picnicTable = {
-    currentPhotoUrl: photoUrl,
-    activeSeats,
-    backgroundSound
+export async function createNeighborhoodSound(title: string, audioDataUrl: string) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { success: false, error: 'Please sign in to capture sounds.' };
+
+  const db = await getDB();
+  if (!db.neighborhoodSounds) db.neighborhoodSounds = [];
+
+  const newSound = {
+    id: generateUUID(),
+    userId: currentUser.id,
+    title,
+    audioDataUrl,
+    createdAt: new Date().toISOString()
   };
-  writeDB(db);
-  return { success: true, table: db.picnicTable };
+
+  db.neighborhoodSounds.push(newSound);
+  await saveDB(db);
+
+  return { success: true, sound: newSound };
 }
