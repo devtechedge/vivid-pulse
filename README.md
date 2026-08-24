@@ -23,6 +23,10 @@ This is the **only** public repo for the project.
 
 ## Screenshots
 
+<p align="center">
+  <img src="docs/social-preview.png" alt="Vivid Pulse" width="800">
+</p>
+
 | Login | Feed |
 |-------|------|
 | ![Sign in with seeded demo ports](docs/screenshots/01-login.png) | ![Stories tray and photo feed](docs/screenshots/02-feed.png) |
