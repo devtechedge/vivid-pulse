@@ -2,7 +2,7 @@
 
 Neo-noir visual social network. A seeded photo feed, 24-hour stories, DMs, and a cozy neighbors board — built with Next.js 15.
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-black?logo=vercel)](https://vividpulse.vercel.app)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-black?logo=vercel)](https://vividpulse-social.vercel.app)
 [![CI](https://github.com/devtechedge/vivid-pulse/actions/workflows/ci.yml/badge.svg)](https://github.com/devtechedge/vivid-pulse/actions/workflows/ci.yml)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)](https://www.typescriptlang.org/)
@@ -13,7 +13,7 @@ Neo-noir visual social network. A seeded photo feed, 24-hour stories, DMs, and a
 
 ## Live Demo
 
-**https://vividpulse.vercel.app**
+**https://vividpulse-social.vercel.app**
 
 > **Status:** The public site is a **demo**. Auth is a signed `vp_session` cookie (not JWT / NextAuth). Posts, stories, and DMs live in **process memory** and reset on cold start. Seeded login: `alex_vivid` / `password123` (or the one-click ports on the login screen).
 
