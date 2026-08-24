@@ -300,7 +300,7 @@ export default function CozyNeighborsPage() {
   }
 
   return (
-    <div id="cozy-neighbors-hub" className="w-full max-w-5xl mx-auto px-6 py-8 flex flex-col gap-8 text-slate-200">
+    <div id="cozy-neighbors-hub" data-testid="neighbors-page" className="w-full max-w-5xl mx-auto px-6 py-8 flex flex-col gap-8 text-slate-200">
       
       {/* Dynamic Floating particles for Wave / Hug reactions */}
       <AnimatePresence>

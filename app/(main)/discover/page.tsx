@@ -65,7 +65,7 @@ export default function DiscoverPage() {
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto px-6 py-8 flex flex-col gap-8">
+    <div data-testid="discover-page" className="w-full max-w-5xl mx-auto px-6 py-8 flex flex-col gap-8">
       
       {/* 1. DISCOVERY HEADER & DEBOUNCED SEARCH */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-900/60">

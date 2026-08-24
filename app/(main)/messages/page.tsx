@@ -626,7 +626,7 @@ export default function MessagesPage() {
   const mainFeedMessages = messages.filter(m => !m.parentId);
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 py-6 h-[calc(100vh-1rem)] flex flex-col gap-4 font-sans select-none">
+    <div data-testid="messages-page" className="w-full max-w-7xl mx-auto px-4 py-6 h-[calc(100vh-1rem)] flex flex-col gap-4 font-sans select-none">
       
       {/* GLOWING SYSTEM HEADER */}
       <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded border bg-slate-950/60 border-slate-900 shadow-lg">

@@ -61,7 +61,7 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#070A13] flex flex-col items-center justify-center p-4 relative overflow-hidden">
+    <main data-testid="login-page" className="min-h-screen bg-[#070A13] flex flex-col items-center justify-center p-4 relative overflow-hidden">
       
       {/* Decorative Neon Background Blurs */}
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-violet-600/10 rounded-full filter blur-[100px] pointer-events-none" />
@@ -133,6 +133,7 @@ export default function LoginPage() {
               onClick={() => handleQuickLogin('alex_vivid')}
               disabled={loading}
               suppressHydrationWarning
+              data-testid="quick-login-alex"
               className="px-3 py-2 bg-slate-900/50 hover:bg-violet-950/20 border border-slate-800 hover:border-violet-500/30 rounded text-[11px] font-medium text-slate-300 hover:text-violet-300 text-left flex items-center justify-between cursor-pointer"
             >
               <span>@alex_vivid</span>
@@ -142,6 +143,7 @@ export default function LoginPage() {
               onClick={() => handleQuickLogin('elena_pixels')}
               disabled={loading}
               suppressHydrationWarning
+              data-testid="quick-login-elena"
               className="px-3 py-2 bg-slate-900/50 hover:bg-violet-950/20 border border-slate-800 hover:border-violet-500/30 rounded text-[11px] font-medium text-slate-300 hover:text-violet-300 text-left flex items-center justify-between cursor-pointer"
             >
               <span>@elena_pixels</span>

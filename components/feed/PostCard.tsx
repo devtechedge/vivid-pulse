@@ -499,6 +499,7 @@ export default function PostCard({ post, onRefresh }: PostCardProps) {
 
   return (
     <article 
+      data-testid="post-card"
       style={borderTintStyle}
       className="w-full bg-slate-950 border rounded overflow-hidden flex flex-col relative transition-all duration-500 ease-out"
     >

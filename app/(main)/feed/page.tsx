@@ -52,7 +52,7 @@ export default function FeedPage() {
   }, []);
 
   return (
-    <div className="w-full max-w-2xl mx-auto px-4 py-8 flex flex-col gap-8">
+    <div data-testid="feed-page" className="w-full max-w-2xl mx-auto px-4 py-8 flex flex-col gap-8">
       
       {/* 1. EPHEMERAL STORY BAR TRAY */}
       <StoryTray />

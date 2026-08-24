@@ -28,16 +28,16 @@ export default function Sidebar() {
   };
 
   const navItems = [
-    { label: 'Daily Posts', href: '/feed', icon: Home },
-    { label: 'Cozy Neighbors', href: '/neighbors', icon: Coffee },
-    { label: 'Find Friends', href: '/discover', icon: Compass },
-    { label: 'Chats', href: '/messages', icon: MessageSquare },
-    { label: 'My Page', href: currentUser ? `/${currentUser.username}` : '#', icon: User, disabled: !currentUser },
+    { label: 'Daily Posts', href: '/feed', icon: Home, testId: 'nav-feed' },
+    { label: 'Cozy Neighbors', href: '/neighbors', icon: Coffee, testId: 'nav-neighbors' },
+    { label: 'Find Friends', href: '/discover', icon: Compass, testId: 'nav-discover' },
+    { label: 'Chats', href: '/messages', icon: MessageSquare, testId: 'nav-messages' },
+    { label: 'My Page', href: currentUser ? `/${currentUser.username}` : '#', icon: User, disabled: !currentUser, testId: 'nav-profile' },
   ];
 
   return (
     <>
-      <aside className="fixed top-0 left-0 h-screen w-64 bg-slate-950/80 backdrop-blur-md border-r border-slate-900 px-6 py-8 flex flex-col justify-between hidden md:flex z-30">
+      <aside data-testid="sidebar" className="fixed top-0 left-0 h-screen w-64 bg-slate-950/80 backdrop-blur-md border-r border-slate-900 px-6 py-8 flex flex-col justify-between hidden md:flex z-30">
         {/* Logo Branding */}
         <div className="flex flex-col gap-8">
           <Link href="/feed" className="flex items-center gap-3 group">
@@ -63,6 +63,7 @@ export default function Sidebar() {
                  <Link
                    key={item.label}
                    href={item.href}
+                   data-testid={item.testId}
                    className={cn(
                      'flex items-center gap-4 px-4 py-3 text-sm font-medium rounded transition-all duration-200 group relative',
                      isActive
@@ -108,6 +109,7 @@ export default function Sidebar() {
           <Button
             variant="outline"
             onClick={handleLogout}
+            data-testid="logout-button"
             className="w-full gap-3 justify-start border-slate-900 hover:border-rose-950/60 hover:bg-rose-950/10 hover:text-rose-400 text-slate-400"
           >
             <LogOut className="w-4 h-4" />
