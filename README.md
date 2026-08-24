@@ -15,6 +15,8 @@ Neo-noir visual social network. A seeded photo feed, 24-hour stories, DMs, and a
 
 **https://vividpulse-social.vercel.app**
 
+Do **not** use https://vividpulse.vercel.app — that hostname is a different AI-automation product.
+
 > **Status:** The public site is a **demo**. Auth is a signed `vp_session` cookie (not JWT / NextAuth). Posts, stories, and DMs live in **process memory** and reset on cold start. Seeded login: `alex_vivid` / `password123` (or the one-click ports on the login screen).
 
 This is the **only** public repo for the project.
