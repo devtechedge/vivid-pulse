@@ -30,7 +30,7 @@
 - Sessions are `userId:expiry:sha256(userId:expiry + secret)` in an httpOnly `vp_session` cookie.
 - Signature compare is a length-checked XOR loop (isomorphic; `db.ts` is imported from client components).
 - Cookie flags: `httpOnly`, `sameSite=lax`, `secure` only in production. The previous `sameSite=none; secure` pair was an AI Studio iframe leftover and broke localhost.
-- Seeded accounts (accepted residual risk for the hiring-manager demo):
+- Seeded accounts (accepted residual risk for the public demo):
 
   | Username | Password |
   |----------|----------|
