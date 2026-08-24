@@ -1,54 +1,23 @@
 'use server';
 
 import { cookies } from 'next/headers';
-import { getDB, saveDB, hashPassword, generateUUID, User, Post, PostMedia, Story, PostLike, Comment, Bookmark, Follow, DirectMessage } from './db';
-
-// Secret key for custom session integrity
-const SESSION_SECRET = 'vividpulse_signing_secret_2026';
-
-// --- SESSION HELPER OPERATIONS ---
-async function generateSessionToken(userId: string): Promise<string> {
-  const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days
-  const data = `${userId}:${expiresAt}`;
-  
-  // Create HMAC-like SHA-256 signature
-  const encoder = new TextEncoder();
-  const rawData = encoder.encode(data + SESSION_SECRET);
-  const sigBuffer = await crypto.subtle.digest('SHA-256', rawData);
-  const sigArray = Array.from(new Uint8Array(sigBuffer));
-  const signature = sigArray.map(b => b.toString(16).padStart(2, '0')).join('');
-
-  return `${userId}:${expiresAt}:${signature}`;
-}
-
-async function verifySessionToken(token: string): Promise<string | null> {
-  if (!token) return null;
-  const parts = token.split(':');
-  if (parts.length !== 3) return null;
-
-  const [userId, expiresAtStr, signature] = parts;
-  const expiresAt = parseInt(expiresAtStr, 10);
-  if (isNaN(expiresAt) || expiresAt < Date.now()) return null;
-
-  const data = `${userId}:${expiresAt}`;
-  const encoder = new TextEncoder();
-  const rawData = encoder.encode(data + SESSION_SECRET);
-  const sigBuffer = await crypto.subtle.digest('SHA-256', rawData);
-  const sigArray = Array.from(new Uint8Array(sigBuffer));
-  const expectedSignature = sigArray.map(b => b.toString(16).padStart(2, '0')).join('');
-
-  if (signature === expectedSignature) {
-    return userId;
-  }
-  return null;
-}
+import { getDB, saveDB, generateUUID, User, Post, PostMedia, Story, PostLike, Comment, Bookmark, Follow, DirectMessage } from './db';
+import {
+  generateSessionToken,
+  hashPassword,
+  SESSION_COOKIE,
+  sessionCookieOptions,
+  verifySessionToken,
+} from './crypto';
+import { clampBio, validateEmail, validatePassword, validateUsername } from './validation';
+import { sliceByCursor } from './pagination';
 
 // --- 1. AUTHENTICATION & SECURITY SYSTEM ---
 
 export async function getCurrentUser(): Promise<User | null> {
   try {
     const cookieStore = await cookies();
-    const sessionToken = cookieStore.get('vp_session')?.value;
+    const sessionToken = cookieStore.get(SESSION_COOKIE)?.value;
     if (!sessionToken) return null;
 
     const userId = await verifySessionToken(sessionToken);
@@ -71,32 +40,30 @@ export async function registerUser(formData: {
 }) {
   try {
     const db = await getDB();
-    const normalizedUsername = formData.username.trim().toLowerCase();
-    const normalizedEmail = formData.email.trim().toLowerCase();
+    const username = validateUsername(formData.username);
+    const email = validateEmail(formData.email);
+    const password = validatePassword(formData.passwordHash);
 
-    // Validations
-    if (!normalizedUsername || normalizedUsername.length < 3) {
-      return { success: false, error: 'Username must be at least 3 characters.' };
-    }
-    if (!formData.passwordHash || formData.passwordHash.length < 6) {
-      return { success: false, error: 'Password must be at least 6 characters.' };
-    }
-    if (db.users.some(u => u.username === normalizedUsername)) {
+    if (!username.ok) return { success: false, error: username.error };
+    if (!email.ok) return { success: false, error: email.error };
+    if (!password.ok) return { success: false, error: password.error };
+
+    if (db.users.some(u => u.username === username.value)) {
       return { success: false, error: 'Username is already taken.' };
     }
-    if (db.users.some(u => u.email === normalizedEmail)) {
+    if (db.users.some(u => u.email === email.value)) {
       return { success: false, error: 'Email is already registered.' };
     }
 
-    const hashed = await hashPassword(formData.passwordHash);
+    const hashed = await hashPassword(password.value);
     const newUser: User = {
       id: generateUUID(),
-      username: normalizedUsername,
-      email: normalizedEmail,
+      username: username.value,
+      email: email.value,
       passwordHash: hashed,
-      displayName: formData.displayName.trim() || normalizedUsername,
-      bio: formData.bio.trim().substring(0, 150),
-      avatarUrl: `https://picsum.photos/seed/${normalizedUsername}/300/300`,
+      displayName: formData.displayName.trim() || username.value,
+      bio: clampBio(formData.bio),
+      avatarUrl: `https://picsum.photos/seed/${username.value}/300/300`,
       website: null,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -108,12 +75,7 @@ export async function registerUser(formData: {
     // Auto-login after register
     const token = await generateSessionToken(newUser.id);
     const cookieStore = await cookies();
-    cookieStore.set('vp_session', token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-      maxAge: 7 * 24 * 60 * 60, // 7 days
-    });
+    cookieStore.set(SESSION_COOKIE, token, sessionCookieOptions());
 
     return { success: true, user: newUser };
   } catch (error: any) {
@@ -138,12 +100,7 @@ export async function loginUser(credentials: { usernameOrEmail: string; password
 
     const token = await generateSessionToken(user.id);
     const cookieStore = await cookies();
-    cookieStore.set('vp_session', token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-      maxAge: 7 * 24 * 60 * 60, // 7 days
-    });
+    cookieStore.set(SESSION_COOKIE, token, sessionCookieOptions());
 
     return { success: true, user };
   } catch (error: any) {
@@ -153,7 +110,7 @@ export async function loginUser(credentials: { usernameOrEmail: string; password
 
 export async function logoutUser() {
   const cookieStore = await cookies();
-  cookieStore.delete('vp_session');
+  cookieStore.delete(SESSION_COOKIE);
   return { success: true };
 }
 
@@ -190,18 +147,7 @@ export async function getFeed(cursor?: string, limit = 5): Promise<{ posts: Feed
 
   // Sort posts by newest first
   let sortedPosts = [...db.posts].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-  // Cursor-based pagination logic
-  let startIndex = 0;
-  if (cursor) {
-    const foundIndex = sortedPosts.findIndex(p => p.id === cursor);
-    if (foundIndex !== -1) {
-      startIndex = foundIndex + 1;
-    }
-  }
-
-  const paginatedPosts = sortedPosts.slice(startIndex, startIndex + limit);
-  const nextCursor = paginatedPosts.length === limit ? paginatedPosts[paginatedPosts.length - 1].id : null;
+  const { page: paginatedPosts, nextCursor } = sliceByCursor(sortedPosts, cursor, limit);
 
   const feedPosts: FeedPost[] = paginatedPosts.map(post => {
     const author = db.users.find(u => u.id === post.userId) || {

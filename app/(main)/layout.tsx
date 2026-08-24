@@ -12,13 +12,13 @@ export default async function MainLayout({ children }: { children: React.ReactNo
   }
 
   return (
-    <div className="min-h-screen bg-[#070A13] flex text-slate-100 pb-16 md:pb-0">
+    <div className="min-h-screen bg-[#070A13] flex text-slate-100 pb-16 md:pb-0 overflow-x-hidden">
       
       {/* Persistent Desktop Sidebar */}
       <Sidebar />
 
       {/* Primary Scrollable Core Stage Content */}
-      <main className="flex-1 min-h-screen md:pl-64 flex flex-col justify-between">
+      <main className="flex-1 min-h-screen min-w-0 md:pl-64 flex flex-col">
         <div className="w-full flex-grow">
           {children}
         </div>
