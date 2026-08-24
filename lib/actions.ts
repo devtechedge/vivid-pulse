@@ -14,7 +14,20 @@ import {
   TimeCapsuleJar,
   TrustedHelper,
   VaultPhoto,
-  PaperChain
+  PaperChain,
+  ScrapbookCollab,
+  ScrapbookSticker,
+  PenPalChain,
+  PenPalLetter,
+  CameraPhoto,
+  CookbookProject,
+  CookbookStep,
+  WeavingPhoto,
+  ChallengeBadge,
+  SingalongVoiceClip,
+  CollabFrameProject,
+  PicnicTableState,
+  FrameStroke
 } from './db';
 
 // Keepsakes
@@ -269,4 +282,256 @@ export async function createPaperChain(message: string, author: string) {
   db.paperChains = [...(db.paperChains || []), newItem];
   writeDB(db);
   return { success: true, item: newItem };
+}
+
+// BATCH 10 Server Actions
+
+// 1. Scrapbook Collabs
+export async function getScrapbooks(): Promise<ScrapbookCollab[]> {
+  const db = readDB();
+  return db.scrapbooks || [];
+}
+
+export async function createScrapbook(title: string, photoUrl: string) {
+  const db = readDB();
+  const newItem: ScrapbookCollab = {
+    id: 'sb_' + Date.now(),
+    title,
+    photoUrl,
+    stickers: [],
+    createdAt: new Date().toISOString()
+  };
+  db.scrapbooks = [newItem, ...(db.scrapbooks || [])];
+  writeDB(db);
+  return { success: true, item: newItem };
+}
+
+export async function addScrapbookSticker(scrapbookId: string, sticker: Omit<ScrapbookSticker, 'id'>) {
+  const db = readDB();
+  db.scrapbooks = (db.scrapbooks || []).map(sb => {
+    if (sb.id === scrapbookId) {
+      const newSticker: ScrapbookSticker = {
+        ...sticker,
+        id: 's_' + Date.now() + '_' + Math.floor(Math.random() * 1000)
+      };
+      return {
+        ...sb,
+        stickers: [...sb.stickers, newSticker]
+      };
+    }
+    return sb;
+  });
+  writeDB(db);
+  return { success: true };
+}
+
+// 2. Nostalgic Pen Pal Chains
+export async function getPenPals(): Promise<PenPalChain[]> {
+  const db = readDB();
+  return db.penPals || [];
+}
+
+export async function createPenPalChain(question: string) {
+  const db = readDB();
+  const newItem: PenPalChain = {
+    id: 'pp_' + Date.now(),
+    question,
+    letters: [],
+    activeAuthor: 'Grandma Green',
+    createdAt: new Date().toISOString()
+  };
+  db.penPals = [newItem, ...(db.penPals || [])];
+  writeDB(db);
+  return { success: true, item: newItem };
+}
+
+export async function addPenPalLetter(chainId: string, text: string, author: string) {
+  const db = readDB();
+  db.penPals = (db.penPals || []).map(pp => {
+    if (pp.id === chainId) {
+      const newLetter: PenPalLetter = {
+        id: 'l_' + Date.now(),
+        author,
+        text,
+        createdAt: new Date().toISOString()
+      };
+      // Toggle active author based on who just wrote
+      const nextAuthor = author === 'Grandma Green' ? 'Arthur Green' : 'Grandma Green';
+      return {
+        ...pp,
+        activeAuthor: nextAuthor,
+        letters: [...pp.letters, newLetter]
+      };
+    }
+    return pp;
+  });
+  writeDB(db);
+  return { success: true };
+}
+
+// 3. Pass-the-Camera Game
+export async function getCameraPhotos(): Promise<CameraPhoto[]> {
+  const db = readDB();
+  return db.cameraPhotos || [];
+}
+
+export async function addCameraPhoto(url: string, caption: string, color: string, submittedBy: string) {
+  const db = readDB();
+  const newItem: CameraPhoto = {
+    id: 'cp_' + Date.now(),
+    url,
+    caption,
+    color,
+    submittedBy,
+    createdAt: new Date().toISOString()
+  };
+  db.cameraPhotos = [newItem, ...(db.cameraPhotos || [])];
+  writeDB(db);
+  return { success: true, item: newItem };
+}
+
+// 4. Community Cookbook Patchwork
+export async function getCookbook(): Promise<CookbookProject> {
+  const db = readDB();
+  return db.cookbook;
+}
+
+export async function addCookbookStep(photoUrl: string, instruction: string, contributedBy: string) {
+  const db = readDB();
+  if (!db.cookbook) {
+    db.cookbook = {
+      id: 'cb1',
+      title: 'Blueberry Pie Collective Stitch',
+      description: 'A baking masterclass compiled step-by-step by the family.',
+      steps: []
+    };
+  }
+  const nextStepNum = (db.cookbook.steps || []).length + 1;
+  const newStep: CookbookStep = {
+    id: 'cbs_' + Date.now(),
+    stepNumber: nextStepNum,
+    photoUrl,
+    instruction,
+    contributedBy,
+    createdAt: new Date().toISOString()
+  };
+  db.cookbook.steps = [...(db.cookbook.steps || []), newStep];
+  writeDB(db);
+  return { success: true, item: newStep };
+}
+
+// 5. Scenic Color Weaving
+export async function getWeavingPhotos(): Promise<WeavingPhoto[]> {
+  const db = readDB();
+  return db.weavingPhotos || [];
+}
+
+export async function addWeavingPhoto(url: string, colorTheme: 'green' | 'amber' | 'blue' | 'rose' | 'slate', scenery: string, uploadedBy: string) {
+  const db = readDB();
+  const newItem: WeavingPhoto = {
+    id: 'wp_' + Date.now(),
+    url,
+    colorTheme,
+    scenery,
+    uploadedBy,
+    createdAt: new Date().toISOString()
+  };
+  db.weavingPhotos = [newItem, ...(db.weavingPhotos || [])];
+  writeDB(db);
+  return { success: true, item: newItem };
+}
+
+// 6. Family Challenge Badges
+export async function getChallengeBadges(): Promise<ChallengeBadge[]> {
+  const db = readDB();
+  return db.badges || [];
+}
+
+export async function unlockBadge(badgeId: string, unlockedBy: string, proofText: string, proofPhoto?: string) {
+  const db = readDB();
+  db.badges = (db.badges || []).map(b => {
+    if (b.id === badgeId) {
+      return {
+        ...b,
+        isUnlocked: true,
+        unlockedBy,
+        proofText,
+        proofPhoto,
+        unlockedAt: new Date().toISOString()
+      };
+    }
+    return b;
+  });
+  writeDB(db);
+  return { success: true };
+}
+
+// 7. Nostalgic Singalong Choir
+export async function getVoiceClips(): Promise<SingalongVoiceClip[]> {
+  const db = readDB();
+  return db.voiceClips || [];
+}
+
+export async function addVoiceClip(member: string, synthNotes: number[]) {
+  const db = readDB();
+  const newItem: SingalongVoiceClip = {
+    id: 'vc_' + Date.now(),
+    member,
+    synthNotes,
+    duration: 4,
+    createdAt: new Date().toISOString()
+  };
+  db.voiceClips = [...(db.voiceClips || []), newItem];
+  writeDB(db);
+  return { success: true, item: newItem };
+}
+
+// 8. Collaborative Hand-Painted Frames
+export async function getFrameProjects(): Promise<CollabFrameProject[]> {
+  const db = readDB();
+  return db.frameProjects || [];
+}
+
+export async function addFrameStroke(projectId: string, stroke: FrameStroke) {
+  const db = readDB();
+  db.frameProjects = (db.frameProjects || []).map(fp => {
+    if (fp.id === projectId) {
+      return {
+        ...fp,
+        strokes: [...(fp.strokes || []), stroke]
+      };
+    }
+    return fp;
+  });
+  writeDB(db);
+  return { success: true };
+}
+
+export async function createFrameProject(photoUrl: string) {
+  const db = readDB();
+  const newItem: CollabFrameProject = {
+    id: 'fp_' + Date.now(),
+    photoUrl,
+    strokes: []
+  };
+  db.frameProjects = [newItem, ...(db.frameProjects || [])];
+  writeDB(db);
+  return { success: true, item: newItem };
+}
+
+// 9. Picnic Table Room State
+export async function getPicnicTable(): Promise<PicnicTableState> {
+  const db = readDB();
+  return db.picnicTable;
+}
+
+export async function updatePicnicTable(photoUrl: string, activeSeats: Record<string, string>, backgroundSound: string) {
+  const db = readDB();
+  db.picnicTable = {
+    currentPhotoUrl: photoUrl,
+    activeSeats,
+    backgroundSound
+  };
+  writeDB(db);
+  return { success: true, table: db.picnicTable };
 }

@@ -4,9 +4,10 @@ import React, { useState, useEffect } from 'react';
 import { useAccessibility } from '@/components/ui/AccessibilityProvider';
 import { MemoryLanes } from '@/components/profile/MemoryLanes';
 import { AccessibleCurations } from '@/components/discover/AccessibleCurations';
+import HearthPlayroom from '@/components/profile/HearthPlayroom';
 import { 
   Heart, Sparkles, Plus, Image as ImageIcon, Volume2, 
-  HelpCircle, Home, Archive, Compass, Moon, Sun, Monitor, MapPin
+  HelpCircle, Home, Archive, Compass, Moon, Sun, Monitor, MapPin, Paintbrush
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { FormattedDate } from '@/components/ui/FormattedDate';
@@ -58,7 +59,7 @@ export default function Page() {
   } = useAccessibility();
 
   // Active view tabs
-  const [activeTab, setActiveTab] = useState<'feed' | 'lanes' | 'discover'>('feed');
+  const [activeTab, setActiveTab] = useState<'feed' | 'lanes' | 'discover' | 'playroom'>('feed');
   
   // Feed states
   const [posts, setPosts] = useState<Post[]>(INITIAL_POSTS);
@@ -249,6 +250,18 @@ export default function Page() {
         >
           <Compass className="w-4 h-4" />
           <span>🧭 Sensory Discovery</span>
+        </button>
+
+        <button
+          onClick={() => handleTabChange('playroom', 'The Hearth Playroom')}
+          className={`px-6 py-3.5 text-xs font-bold uppercase tracking-wider rounded-t-xl transition-all flex items-center gap-2 border-b-2 cursor-pointer ${
+            activeTab === 'playroom'
+              ? 'border-amber-500 text-amber-400 bg-slate-900/40'
+              : 'border-transparent text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <Paintbrush className="w-4 h-4" />
+          <span>🎨 Hearth Playroom</span>
         </button>
       </div>
 
@@ -486,6 +499,11 @@ export default function Page() {
         {/* VIEW C: SENSORY DISCOVERY */}
         {activeTab === 'discover' && (
           <AccessibleCurations />
+        )}
+
+        {/* VIEW D: HEARTH PLAYROOM */}
+        {activeTab === 'playroom' && (
+          <HearthPlayroom />
         )}
       </div>
 

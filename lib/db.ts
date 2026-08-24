@@ -102,6 +102,112 @@ export interface PaperChain {
   createdAt: string;
 }
 
+// BATCH 10 types
+export interface ScrapbookSticker {
+  id: string;
+  type: string; // 'heart' | 'star' | 'flower' | 'smile' | 'key' | 'seal'
+  x: number; // percentage
+  y: number; // percentage
+  scale: number;
+  placedBy: string;
+}
+
+export interface ScrapbookCollab {
+  id: string;
+  photoUrl: string;
+  title: string;
+  stickers: ScrapbookSticker[];
+  createdAt: string;
+}
+
+export interface PenPalLetter {
+  id: string;
+  author: string;
+  text: string;
+  createdAt: string;
+}
+
+export interface PenPalChain {
+  id: string;
+  question: string;
+  letters: PenPalLetter[];
+  activeAuthor: string; // "Grandma Green" | "Arthur Green"
+  createdAt: string;
+}
+
+export interface CameraPhoto {
+  id: string;
+  url: string;
+  caption: string;
+  color: string; // "red" | "blue" | "yellow" | "green"
+  submittedBy: string;
+  createdAt: string;
+}
+
+export interface CookbookStep {
+  id: string;
+  stepNumber: number;
+  photoUrl: string;
+  instruction: string;
+  contributedBy: string;
+  createdAt: string;
+}
+
+export interface CookbookProject {
+  id: string;
+  title: string;
+  description: string;
+  steps: CookbookStep[];
+}
+
+export interface WeavingPhoto {
+  id: string;
+  url: string;
+  colorTheme: 'green' | 'amber' | 'blue' | 'rose' | 'slate';
+  scenery: string;
+  uploadedBy: string;
+  createdAt: string;
+}
+
+export interface ChallengeBadge {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  isUnlocked: boolean;
+  unlockedAt?: string;
+  unlockedBy?: string;
+  proofPhoto?: string;
+  proofText?: string;
+}
+
+export interface SingalongVoiceClip {
+  id: string;
+  member: string;
+  synthNotes: number[]; // playback notes
+  duration: number;
+  createdAt: string;
+}
+
+export interface FrameStroke {
+  color: string;
+  side: 'left' | 'right' | 'top' | 'bottom';
+  points: {x: number; y: number}[];
+  drawnBy: string;
+}
+
+export interface CollabFrameProject {
+  id: string;
+  photoUrl: string;
+  strokes: FrameStroke[];
+}
+
+export interface PicnicTableState {
+  currentPhotoUrl: string;
+  activeSeats: Record<string, string>; // seat index -> name
+  backgroundSound: string;
+}
+
 export interface DatabaseState {
   keepsakes: Keepsake[];
   wins: Win[];
@@ -115,6 +221,16 @@ export interface DatabaseState {
   trustedHelpers: TrustedHelper[];
   vaultPhotos: VaultPhoto[];
   paperChains: PaperChain[];
+  // Batch 10 additions
+  scrapbooks: ScrapbookCollab[];
+  penPals: PenPalChain[];
+  cameraPhotos: CameraPhoto[];
+  cookbook: CookbookProject;
+  weavingPhotos: WeavingPhoto[];
+  badges: ChallengeBadge[];
+  voiceClips: SingalongVoiceClip[];
+  frameProjects: CollabFrameProject[];
+  picnicTable: PicnicTableState;
 }
 
 const INITIAL_STATE: DatabaseState = {
@@ -219,7 +335,69 @@ const INITIAL_STATE: DatabaseState = {
   paperChains: [
     { id: 'pc1', message: 'We are all stitched together in love.', author: 'Grandma', createdAt: new Date().toISOString() },
     { id: 'pc2', message: 'Keep shining your gentle light.', author: 'Lily', createdAt: new Date().toISOString() }
-  ]
+  ],
+  scrapbooks: [
+    {
+      id: 'sb1',
+      title: 'Our Sweet Flower Garden Album',
+      photoUrl: 'https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?w=600&q=80',
+      stickers: [
+        { id: 's1', type: 'heart', x: 25, y: 30, scale: 1.2, placedBy: 'Arthur Green' },
+        { id: 's2', type: 'flower', x: 70, y: 45, scale: 1.0, placedBy: 'Grandma Green' }
+      ],
+      createdAt: new Date().toISOString()
+    }
+  ],
+  penPals: [
+    {
+      id: 'pp1',
+      question: 'What was your absolute favorite outdoor spot to run around when you were ten years old?',
+      activeAuthor: 'Grandma Green',
+      createdAt: new Date().toISOString(),
+      letters: [
+        { id: 'l1', author: 'Arthur Green', text: 'Hey Grandma! I love the oak tree behind our backyard. It has a super cool low branch that looks like a dragon saddle, and Lily lets me sit there and read adventure books.', createdAt: new Date(Date.now() - 3600000 * 24).toISOString() }
+      ]
+    }
+  ],
+  cameraPhotos: [
+    { id: 'cp1', url: 'https://images.unsplash.com/photo-1516062423079-7ca13cdc7f5a?w=400&q=80', caption: 'Found the golden brass compass in the chest!', color: 'yellow', submittedBy: 'Grandma Green', createdAt: new Date(Date.now() - 3600000 * 5).toISOString() }
+  ],
+  cookbook: {
+    id: 'cb1',
+    title: 'Blueberry Pie Collective Stitch',
+    description: 'A baking masterclass compiled step-by-step by the family.',
+    steps: [
+      { id: 'cbs1', stepNumber: 1, photoUrl: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&q=80', instruction: 'Gently roll out the butter dough crust until it matches Grandma’s antique ceramic baking dish.', contributedBy: 'Grandma Green', createdAt: new Date(Date.now() - 3600000 * 12).toISOString() }
+    ]
+  },
+  weavingPhotos: [
+    { id: 'wp1', url: 'https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?w=400&q=80', colorTheme: 'green', scenery: 'Sunny Flower Garden', uploadedBy: 'Lily Green', createdAt: new Date().toISOString() },
+    { id: 'wp2', url: 'https://images.unsplash.com/photo-1452570053594-1b985d6ea890?w=400&q=80', colorTheme: 'blue', scenery: 'Misty Blue Bird Wood', uploadedBy: 'Grandma Green', createdAt: new Date().toISOString() }
+  ],
+  badges: [
+    { id: 'b1', title: 'Funny Cloud Watcher', description: 'Take a picture of a funny-shaped cloud floating in the sky.', icon: '☁️', isUnlocked: true, unlockedBy: 'Arthur Green', proofText: 'Spotted one that looks like a fluffy giant accordion!', unlockedAt: new Date().toISOString() },
+    { id: 'b2', title: 'Flower Whisperer', description: 'Plant or care for a garden flower and document its first morning bloom.', icon: '🌻', isUnlocked: false },
+    { id: 'b3', title: 'Attic Treasure Hunter', description: 'Discover an antique keepsake that is older than 50 years.', icon: '🔑', isUnlocked: false },
+    { id: 'b4', title: 'Choir Harmonizer', description: 'Submit your voice clip to the community holiday singalong card.', icon: '🎶', isUnlocked: false }
+  ],
+  voiceClips: [
+    { id: 'vc1', member: 'Grandma Green', synthNotes: [261, 329, 392], duration: 4, createdAt: new Date().toISOString() },
+    { id: 'vc2', member: 'Arthur Green', synthNotes: [392, 440, 523], duration: 4, createdAt: new Date().toISOString() }
+  ],
+  frameProjects: [
+    {
+      id: 'fp1',
+      photoUrl: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=500&q=80',
+      strokes: [
+        { color: '#f59e0b', side: 'top', points: [{x: 10, y: 10}, {x: 90, y: 10}], drawnBy: 'Grandma Green' }
+      ]
+    }
+  ],
+  picnicTable: {
+    currentPhotoUrl: 'https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?w=600&q=80',
+    activeSeats: { '0': 'Grandma Green' },
+    backgroundSound: 'fire'
+  }
 };
 
 export function readDB(): DatabaseState {
@@ -229,7 +407,15 @@ export function readDB(): DatabaseState {
       return INITIAL_STATE;
     }
     const raw = fs.readFileSync(DB_FILE, 'utf-8');
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    
+    // Backwards compatibility safety merge
+    return {
+      ...INITIAL_STATE,
+      ...parsed,
+      cookbook: parsed.cookbook ? { ...INITIAL_STATE.cookbook, ...parsed.cookbook } : INITIAL_STATE.cookbook,
+      picnicTable: parsed.picnicTable ? { ...INITIAL_STATE.picnicTable, ...parsed.picnicTable } : INITIAL_STATE.picnicTable
+    };
   } catch (error) {
     console.error('Error reading DB:', error);
     return INITIAL_STATE;
