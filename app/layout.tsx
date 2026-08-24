@@ -2,8 +2,12 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'VividPulse | Premium Visual Social Platform',
-  description: 'Unveiling a neo-noir visual network built for modern digital creators.',
+  title: 'VividPulse | Visual Social Network',
+  description:
+    'Neo-noir photo sharing network with a feed, stories, DMs, and a cozy neighbors board. Seeded in-memory demo.',
+  icons: {
+    icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
