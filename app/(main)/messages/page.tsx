@@ -1762,8 +1762,8 @@ export default function MessagesPage() {
               <div className="flex items-center gap-2">
                 <Layers className="w-4 h-4 text-violet-400" />
                 <div>
-                  <h3 className="text-sm font-extrabold text-slate-200 uppercase tracking-wider">Mesh Transmission Multi-Blast</h3>
-                  <p className="text-[9px] font-mono text-slate-500">Dispatches individual private messages to up to 50 concurrent endpoints</p>
+                  <h3 className="text-sm font-extrabold text-slate-200 uppercase tracking-wider">Start a group chat</h3>
+                  <p className="text-[9px] font-mono text-slate-500">Send the same message to up to 50 people</p>
                 </div>
               </div>
               <button
@@ -1786,7 +1786,7 @@ export default function MessagesPage() {
               {/* Recipient Selection checklist */}
               <div className="flex flex-col gap-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Select Target Channels (max 50)</span>
+                  <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Select people (max 50)</span>
                   <span className="text-[9px] font-mono text-teal-400">
                     Selected: {blastSelectedRecipients.length} / 50
                   </span>
@@ -1832,12 +1832,12 @@ export default function MessagesPage() {
 
               {/* Message Payload draft */}
               <div className="flex flex-col gap-1.5">
-                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Dispatched Package content</span>
+                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Message</span>
                 <textarea
                   value={blastContent}
                   onChange={e => setBlastContent(e.target.value)}
                   disabled={blastProgress !== null}
-                  placeholder="Draft concurrent direct packet broadcast payloads..."
+                  placeholder="Write a message..."
                   className="w-full h-24 bg-slate-900 border border-slate-850 rounded p-2.5 text-xs text-slate-200 outline-none focus:border-violet-500 leading-relaxed"
                 />
               </div>
@@ -1868,7 +1868,7 @@ export default function MessagesPage() {
                   className="w-full py-3 bg-violet-600 hover:bg-violet-500 disabled:bg-slate-900 text-white disabled:text-slate-600 font-extrabold uppercase text-xs tracking-widest rounded border border-violet-500/10 transition-all cursor-pointer disabled:pointer-events-none"
                   id="transmission_blast_execute"
                 >
-                  Execute Transmission Blast
+                  Start group chat
                 </button>
               )}
 
