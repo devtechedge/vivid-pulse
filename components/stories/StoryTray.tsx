@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Plus, Loader2, Sparkles, Image as ImageIcon, Compass, MapPin, Radio, Activity } from 'lucide-react';
+import { Plus, Loader2, Sparkles, Compass, Activity } from 'lucide-react';
 import { getActiveStories, getCurrentUser, ActiveStoryTray } from '@/lib/actions';
 import { User as UserType } from '@/lib/db';
 import StoryViewer from './StoryViewer';
@@ -242,43 +242,32 @@ export default function StoryTray() {
         </div>
       ) : (
         /* FEATURE 14: COORDINATE NODE RINGS RADAR MAP */
-        <div className="w-full min-h-[220px] bg-slate-950 border border-slate-900/60 rounded p-4 flex flex-col gap-4 relative overflow-hidden">
-          {/* Grid neon grid lines */}
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:24px_24px] opacity-25 pointer-events-none" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full border border-violet-950/25 animate-ping pointer-events-none" style={{ animationDuration: '4s' }} />
+        <div className="w-full flex flex-col gap-3">
+          <p className="text-[11px] text-slate-400">People with a live story, grouped by how far they are.</p>
 
-          <div className="z-10 flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <span className="text-[9px] font-sans text-slate-400 flex items-center gap-1">
-                <Radio className="w-3 h-3 text-violet-500 animate-pulse" /> Look who shared pictures near you!
-              </span>
-              <span className="text-[8px] font-sans text-slate-500">Location: Around Me</span>
-            </div>
-
-            {/* NEON ORBITAL NODE RINGS */}
-            <div className="flex flex-col gap-3.5">
+          <div className="flex flex-col gap-4">
               {/* RING 1: PROXIMAL CORE */}
-              <div className="flex flex-col gap-2 p-2 bg-slate-900/20 border border-violet-950/20 rounded">
-                <div className="flex items-center justify-between text-[8px] font-sans">
-                  <span className="text-violet-400 font-bold uppercase tracking-wider">● Right down the road (Less than 2 miles away)</span>
-                  <span className="text-slate-500">{proximalCore.length} active user{proximalCore.length !== 1 ? 's' : ''}</span>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between text-[10px]">
+                  <span className="text-violet-500 font-bold uppercase tracking-wider">Nearby · under 2 miles</span>
+                  <span className="text-slate-500">{proximalCore.length}</span>
                 </div>
                 {proximalCore.length === 0 ? (
-                  <span className="text-[9px] text-slate-600 italic font-sans pl-3">No updates found close to you right now.</span>
+                  <span className="text-[11px] text-slate-500 italic">Nobody with a story this close right now.</span>
                 ) : (
-                  <div className="flex flex-wrap gap-3 pl-2 py-1">
+                  <div className="flex flex-wrap gap-2">
                     {proximalCore.map(tray => {
                       const idx = trays.findIndex(t => t.userId === tray.userId);
                       return (
                         <div
                           key={tray.userId}
                           onClick={() => setActiveUserIndex(idx)}
-                          className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-900 border border-slate-800 rounded hover:border-violet-500 cursor-pointer transition-all hover:bg-slate-900/60"
+                          className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-900/40 rounded hover:bg-violet-600/10 cursor-pointer transition-all"
                         >
                           <SafeImg kind="avatar" src={tray.avatarUrl || '/avatars/default.svg'} alt="" className="vp-avatar w-5 h-5 rounded-full object-cover" />
-                          <div className="flex flex-col leading-none">
-                            <span className="text-[10px] font-bold text-slate-200">@{tray.username}</span>
-                            <span className="text-[8px] font-sans text-violet-400 mt-0.5">{tray.distance} km</span>
+                          <div className="flex flex-col leading-none min-w-0">
+                            <span className="text-[10px] font-bold text-slate-200 truncate">@{tray.username}</span>
+                            <span className="text-[8px] text-violet-400 mt-0.5">{tray.distance} km</span>
                           </div>
                         </div>
                       );
@@ -288,27 +277,27 @@ export default function StoryTray() {
               </div>
 
               {/* RING 2: TRANSIT VECTOR */}
-              <div className="flex flex-col gap-2 p-2 bg-slate-900/20 border border-teal-950/20 rounded">
-                <div className="flex items-center justify-between text-[8px] font-sans">
-                  <span className="text-teal-400 font-bold uppercase tracking-wider">● A short drive away (2 to 7 miles away)</span>
-                  <span className="text-slate-500">{transitVector.length} active user{transitVector.length !== 1 ? 's' : ''}</span>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between text-[10px]">
+                  <span className="text-teal-500 font-bold uppercase tracking-wider">A short drive · 2–7 miles</span>
+                  <span className="text-slate-500">{transitVector.length}</span>
                 </div>
                 {transitVector.length === 0 ? (
-                  <span className="text-[9px] text-slate-600 italic font-sans pl-3">No updates found in this range.</span>
+                  <span className="text-[11px] text-slate-500 italic">No stories in this range.</span>
                 ) : (
-                  <div className="flex flex-wrap gap-3 pl-2 py-1">
+                  <div className="flex flex-wrap gap-2">
                     {transitVector.map(tray => {
                       const idx = trays.findIndex(t => t.userId === tray.userId);
                       return (
                         <div
                           key={tray.userId}
                           onClick={() => setActiveUserIndex(idx)}
-                          className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-900 border border-slate-800 rounded hover:border-teal-500 cursor-pointer transition-all hover:bg-slate-900/60"
+                          className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-900/40 rounded hover:bg-teal-600/10 cursor-pointer transition-all"
                         >
                           <SafeImg kind="avatar" src={tray.avatarUrl || '/avatars/default.svg'} alt="" className="vp-avatar w-5 h-5 rounded-full object-cover" />
-                          <div className="flex flex-col leading-none">
-                            <span className="text-[10px] font-bold text-slate-200">@{tray.username}</span>
-                            <span className="text-[8px] font-sans text-teal-400 mt-0.5">{tray.distance} km</span>
+                          <div className="flex flex-col leading-none min-w-0">
+                            <span className="text-[10px] font-bold text-slate-200 truncate">@{tray.username}</span>
+                            <span className="text-[8px] text-teal-400 mt-0.5">{tray.distance} km</span>
                           </div>
                         </div>
                       );
@@ -318,27 +307,27 @@ export default function StoryTray() {
               </div>
 
               {/* RING 3: HORIZON PERIMETER */}
-              <div className="flex flex-col gap-2 p-2 bg-slate-900/20 border border-slate-800/40 rounded">
-                <div className="flex items-center justify-between text-[8px] font-sans">
-                  <span className="text-slate-400 font-bold uppercase tracking-wider">● A bit further out (Over 7 miles away)</span>
-                  <span className="text-slate-500">{horizonPerimeter.length} active user{horizonPerimeter.length !== 1 ? 's' : ''}</span>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between text-[10px]">
+                  <span className="text-slate-400 font-bold uppercase tracking-wider">Further out · 7+ miles</span>
+                  <span className="text-slate-500">{horizonPerimeter.length}</span>
                 </div>
                 {horizonPerimeter.length === 0 ? (
-                  <span className="text-[9px] text-slate-600 italic font-sans pl-3">No updates found far away.</span>
+                  <span className="text-[11px] text-slate-500 italic">No stories further out.</span>
                 ) : (
-                  <div className="flex flex-wrap gap-3 pl-2 py-1">
+                  <div className="flex flex-wrap gap-2">
                     {horizonPerimeter.map(tray => {
                       const idx = trays.findIndex(t => t.userId === tray.userId);
                       return (
                         <div
                           key={tray.userId}
                           onClick={() => setActiveUserIndex(idx)}
-                          className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-900 border border-slate-800 rounded hover:border-slate-500 cursor-pointer transition-all hover:bg-slate-900/60"
+                          className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-900/40 rounded hover:bg-slate-800/40 cursor-pointer transition-all"
                         >
                           <SafeImg kind="avatar" src={tray.avatarUrl || '/avatars/default.svg'} alt="" className="vp-avatar w-5 h-5 rounded-full object-cover" />
-                          <div className="flex flex-col leading-none">
-                            <span className="text-[10px] font-bold text-slate-200">@{tray.username}</span>
-                            <span className="text-[8px] font-sans text-slate-400 mt-0.5">{tray.distance} km</span>
+                          <div className="flex flex-col leading-none min-w-0">
+                            <span className="text-[10px] font-bold text-slate-200 truncate">@{tray.username}</span>
+                            <span className="text-[8px] text-slate-400 mt-0.5">{tray.distance} km</span>
                           </div>
                         </div>
                       );
@@ -346,7 +335,6 @@ export default function StoryTray() {
                   </div>
                 )}
               </div>
-            </div>
           </div>
         </div>
       )}

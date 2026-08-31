@@ -168,6 +168,13 @@ body {
   color: var(--nav-idle) !important;
 }
 
+/* Post cards: no enclosing stroke (light mode made uncolored `border` inherit black). */
+[data-testid="post-card"] {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 .theme-toggle-slot {
   position: fixed;
   top: 12px;

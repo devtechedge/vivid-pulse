@@ -494,15 +494,14 @@ export default function PostCard({ post, onRefresh }: PostCardProps) {
 
   // Extract color shadows programmatically
   const borderTintStyle = {
-    borderColor: harmonizedColors[0] ? `${harmonizedColors[0].replace('rgb', 'rgba').replace(')', ', 0.25)')}` : 'rgba(124,58,237,0.15)',
-    boxShadow: harmonizedColors[0] ? `0 0 30px ${harmonizedColors[0].replace('rgb', 'rgba').replace(')', ', 0.08)')}` : 'none'
+    boxShadow: 'none',
   };
 
   return (
     <article 
       data-testid="post-card"
       style={borderTintStyle}
-      className="w-full bg-slate-950 border rounded overflow-hidden flex flex-col relative transition-all duration-500 ease-out"
+      className="w-full bg-slate-950 rounded overflow-hidden flex flex-col relative transition-all duration-500 ease-out"
     >
       
       {/* 2. Absolute kinetic reaction overlay canvas */}
