@@ -168,9 +168,6 @@ export default function FeedPage() {
             )}
           </div>
         </div>
-        <p className="text-[10px] text-slate-600 px-1 leading-relaxed">
-          In-memory demo. Seed photos ship with the app so the feed never depends on a third-party image host.
-        </p>
       </aside>
     </div>
   );

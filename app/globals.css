@@ -167,17 +167,36 @@ body {
   border-right: 0 !important;
 }
 [data-theme="light"] .vp-share-photo {
-  background: var(--share-bg) !important;
-  color: var(--share-fg) !important;
-  border-color: var(--share-border) !important;
+  background: #7c3aed !important;
+  color: #ffffff !important;
+  border: none !important;
 }
 [data-theme="light"] .vp-share-photo:hover {
-  background: rgba(109, 40, 217, 0.2) !important;
-  color: #4c1d95 !important;
+  background: #6d28d9 !important;
+  color: #ffffff !important;
 }
 [data-theme="light"] nav a.text-slate-400,
 [data-theme="light"] aside a.text-slate-400 {
   color: var(--nav-idle) !important;
+}
+
+/* Pastel-on-white chips were unreadable. Darken accent text in light mode. */
+[data-theme="light"] .text-teal-300,
+[data-theme="light"] .text-teal-400 { color: #0f766e !important; }
+[data-theme="light"] .text-violet-300,
+[data-theme="light"] .text-violet-400 { color: #6d28d9 !important; }
+[data-theme="light"] .text-amber-300,
+[data-theme="light"] .text-amber-400 { color: #b45309 !important; }
+[data-theme="light"] .text-emerald-400 { color: #047857 !important; }
+[data-theme="light"] .text-sky-400 { color: #0369a1 !important; }
+[data-theme="light"] .text-indigo-400 { color: #4338ca !important; }
+[data-theme="light"] .text-rose-300,
+[data-theme="light"] .text-rose-400 { color: #be123c !important; }
+
+[data-testid="logout-button"] {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
 }
 
 /* Post cards: no enclosing stroke (light mode made uncolored `border` inherit black). */
@@ -220,10 +239,9 @@ body {
   width: 36px; height: 36px; padding: 0; flex: 0 0 36px;
   display: grid; place-items: center; position: relative;
   border-radius: 8px; cursor: pointer; border: 0;
-  background: color-mix(in oklab, var(--surface) 88%, transparent);
+  background: transparent;
   color: inherit;
-  box-shadow: 0 0 0 1px color-mix(in oklab, currentColor 18%, transparent);
-  backdrop-filter: blur(8px);
+  box-shadow: none;
 }
 .theme-toggle .icon {
   grid-area: 1 / 1; display: grid; place-items: center;

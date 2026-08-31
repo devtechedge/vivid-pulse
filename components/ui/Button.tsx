@@ -20,7 +20,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
               variant === 'primary',
             'bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700 rounded':
               variant === 'secondary',
-            'bg-transparent hover:bg-slate-800/50 text-slate-200 border border-slate-700 hover:border-slate-500 rounded':
+            'bg-transparent hover:bg-slate-800/40 text-slate-200 border-0 rounded':
               variant === 'outline',
             'bg-transparent hover:bg-violet-500/10 text-violet-400 hover:text-violet-300 rounded':
               variant === 'ghost',

@@ -72,11 +72,11 @@ export default function Sidebar() {
                    className={cn(
                      'flex items-center gap-4 px-4 py-3 text-sm font-medium rounded transition-all duration-200 group relative',
                      isActive
-                       ? 'bg-slate-900 text-violet-400 border-l-2 border-violet-500 shadow-[inset_4px_0_10px_rgba(124,58,237,0.05)]'
-                       : 'text-slate-400 hover:text-slate-100 hover:bg-slate-900/40'
+                       ? 'bg-violet-50 text-violet-700'
+                       : 'text-slate-500 hover:text-slate-900 hover:bg-violet-50/60'
                    )}
                  >
-                   <Icon className={cn('w-5 h-5 transition-transform group-hover:scale-105', isActive ? 'text-violet-400' : 'text-slate-400 group-hover:text-slate-200')} />
+                   <Icon className={cn('w-5 h-5 transition-transform group-hover:scale-105', isActive ? 'text-violet-600' : 'text-slate-500 group-hover:text-slate-800')} />
                    <span className="tracking-wide">{item.label}</span>
                  </Link>
                );
@@ -86,7 +86,7 @@ export default function Sidebar() {
              {currentUser && (
                <button
                  onClick={() => setIsCreateOpen(true)}
-                 className="vp-share-photo mt-4 flex items-center gap-4 px-4 py-3 text-sm font-semibold rounded bg-violet-600/10 text-violet-300 border border-violet-500/20 hover:bg-violet-600/20 hover:text-white transition-all cursor-pointer group text-left w-full"
+                 className="vp-share-photo mt-4 flex items-center gap-4 px-4 py-3 text-sm font-semibold rounded text-white border-0 hover:text-white transition-all cursor-pointer group text-left w-full"
                >
                  <PlusSquare className="w-5 h-5 group-hover:scale-105 transition-transform flex-shrink-0" />
                  <span className="tracking-wide">Share Photo</span>
@@ -113,10 +113,10 @@ export default function Sidebar() {
           )}
 
           <Button
-            variant="outline"
+            variant="ghost"
             onClick={handleLogout}
             data-testid="logout-button"
-            className="w-full gap-3 justify-start border-slate-900 hover:border-rose-950/60 hover:bg-rose-950/10 hover:text-rose-400 text-slate-400"
+            className="w-full gap-3 justify-start text-slate-600 hover:text-rose-600 hover:bg-transparent px-1"
           >
             <LogOut className="w-4 h-4" />
             <span className="text-xs font-semibold uppercase tracking-wider">Log Out</span>

@@ -610,8 +610,8 @@ export default function PostCard({ post, onRefresh }: PostCardProps) {
             className={cn(
               'px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-all duration-200 cursor-pointer rounded-sm',
               isFollowing
-                ? 'bg-slate-900 text-slate-500 border border-slate-800'
-                : 'bg-violet-600/15 hover:bg-violet-600/35 text-violet-300 hover:text-white border border-violet-500/20 shadow-[0_0_15px_rgba(124,58,237,0.1)]'
+                ? 'bg-transparent text-slate-600'
+                : 'bg-violet-600 hover:bg-violet-500 text-white'
             )}
           >
             {isFollowing ? 'Live Now' : 'Follow Friend'}
@@ -619,7 +619,7 @@ export default function PostCard({ post, onRefresh }: PostCardProps) {
         )}
 
         {isSelf && (
-          <span className="text-[9px] font-bold tracking-wider uppercase bg-teal-950/40 border border-teal-900/60 text-teal-400 px-2 py-1 rounded-sm">
+          <span className="text-[10px] font-bold tracking-wider uppercase bg-violet-600 text-white px-2.5 py-1 rounded-sm">
             New Post
           </span>
         )}
