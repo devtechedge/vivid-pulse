@@ -172,8 +172,8 @@ export default function ProfilePage() {
             {/* Actions: Follow CTA, Edit Profile (disabled visual only for self), or DM button */}
             <div className="flex items-center gap-2 mt-2 md:mt-0">
               {isSelf ? (
-                <span className="text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 bg-teal-950/30 border border-teal-900/60 text-teal-400 rounded-sm">
-                  Authorized Owner Port
+                <span className="text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 bg-white border border-violet-200 text-violet-700 rounded-sm">
+                  Your page
                 </span>
               ) : (
                 <>
