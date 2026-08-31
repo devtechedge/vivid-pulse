@@ -39,7 +39,7 @@ export default function Sidebar() {
 
   return (
     <>
-      <aside data-testid="sidebar" className="fixed top-0 left-0 h-screen w-64 bg-slate-950/80 backdrop-blur-md border-r border-slate-900 px-6 py-8 flex flex-col justify-between hidden md:flex z-30 overflow-hidden">
+      <aside data-testid="sidebar" className="fixed top-0 left-0 h-screen w-64 bg-slate-950/80 backdrop-blur-md px-6 py-8 flex flex-col justify-between hidden md:flex z-30 overflow-hidden">
         {/* Logo Branding */}
         <div className="flex flex-col gap-8">
           <div className="flex items-start justify-between gap-2">

@@ -147,7 +147,7 @@ export default function ProfilePage() {
     <div className="w-full max-w-4xl mx-auto px-6 py-10 flex flex-col gap-8">
       
       {/* 1. DYNAMIC PROFILE HEADER DESCRIPTION */}
-      <div className="flex flex-col md:flex-row items-center md:items-start gap-8 pb-8 border-b border-slate-900/60 bg-slate-950/30 p-6 rounded border border-slate-900/40">
+      <div className="vp-box flex flex-col md:flex-row items-center md:items-start gap-8 p-6 rounded">
         
         {/* Avatar */}
         <div className="relative w-24 h-24 md:w-28 md:h-28 rounded flex-shrink-0 bg-gradient-to-tr from-violet-600 to-teal-400 p-[3px] shadow-[0_0_20px_rgba(124,58,237,0.2)]">
@@ -235,7 +235,7 @@ export default function ProfilePage() {
       </div>
 
       {/* 2. TABBED NAVIGATION */}
-      <div className="flex border-b border-slate-900/60 justify-center md:justify-start gap-8 bg-slate-950/20 px-4 py-2 rounded">
+      <div className="vp-box flex justify-center md:justify-start gap-8 px-4 py-2 rounded">
         
         {/* Posts Grid Tab */}
         <button
