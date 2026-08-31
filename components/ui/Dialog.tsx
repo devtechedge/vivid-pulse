@@ -60,7 +60,7 @@ export function Dialog({ isOpen, onClose, title, children, className }: DialogPr
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-900 bg-slate-950">
               {title ? (
-                <h3 className="text-sm font-semibold tracking-wider text-slate-200 uppercase">
+                <h3 className="text-sm font-semibold text-slate-200">
                   {title}
                 </h3>
               ) : (

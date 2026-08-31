@@ -98,10 +98,10 @@ export default function CreatePostModal({ isOpen, onClose, currentUser }: Create
     if (coAuthors.length > 0) {
       coAuthors.forEach(author => {
         if (!coAuthorStatuses[author]) {
-          setCoAuthorStatuses(prev => ({ ...prev, [author]: 'SYNCING DRAFT 🟡' }));
+          setCoAuthorStatuses(prev => ({ ...prev, [author]: 'Invited' }));
           
           setTimeout(() => {
-            setCoAuthorStatuses(prev => ({ ...prev, [author]: 'SIGNED & VERIFIED ✅' }));
+            setCoAuthorStatuses(prev => ({ ...prev, [author]: 'Added' }));
           }, 1500);
         }
       });
@@ -647,7 +647,7 @@ export default function CreatePostModal({ isOpen, onClose, currentUser }: Create
           stopAudioPreview();
           onClose();
         }}
-        title="Share Something New with Friends"
+        title="Share a photo"
         className="max-w-2xl"
       >
         <form onSubmit={handleFormSubmit} className="flex flex-col gap-6">
@@ -661,23 +661,22 @@ export default function CreatePostModal({ isOpen, onClose, currentUser }: Create
           {/* Media uploader layout */}
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-slate-400 tracking-wider uppercase flex items-center gap-1.5">
-                <Layers className="w-3.5 h-3.5 text-violet-500" />
-                Your Pictures
+              <label className="text-xs font-semibold text-slate-600 flex items-center gap-1.5">
+                <ImageIcon className="w-3.5 h-3.5 text-violet-500" />
+                Photos
               </label>
               {mediaUrls.length >= 2 && (
-                <div className="flex items-center gap-1.5 bg-slate-900/40 px-2.5 py-1 border border-slate-900 rounded">
-                  <Layout className="w-3.5 h-3.5 text-teal-400" />
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Choose Layout:</span>
+                <div className="flex items-center gap-1.5 px-2 py-1">
+                  <span className="text-[11px] text-slate-500">Layout</span>
                   <select
                     value={layoutMatrix}
                     onChange={(e: any) => setLayoutMatrix(e.target.value)}
-                    className="bg-transparent text-[10px] font-bold text-teal-400 border-none outline-none cursor-pointer uppercase"
+                    className="bg-transparent text-[11px] font-medium text-slate-700 border-none outline-none cursor-pointer"
                   >
-                    <option value="normal" className="bg-slate-950 text-slate-300">Default Slider</option>
-                    <option value="asymmetric-split" className="bg-slate-950 text-slate-300">Asymmetric Split (60/40)</option>
+                    <option value="normal" className="bg-white text-slate-700">Slideshow</option>
+                    <option value="asymmetric-split" className="bg-white text-slate-700">Split</option>
                     {mediaUrls.length >= 3 && (
-                      <option value="triptych" className="bg-slate-950 text-slate-300">Triptych Grid (3 Panels)</option>
+                      <option value="triptych" className="bg-white text-slate-700">Three photos</option>
                     )}
                   </select>
                 </div>
@@ -696,8 +695,8 @@ export default function CreatePostModal({ isOpen, onClose, currentUser }: Create
               />
               <div className="flex flex-col items-center justify-center gap-2 text-center pointer-events-none">
                 <ImageIcon className="w-8 h-8 text-slate-700 group-hover:text-violet-400 transition-all" />
-                <span className="text-xs font-semibold text-slate-300">Drag & Drop or Click to Add Pictures</span>
-                <span className="text-[10px] font-medium text-slate-500">We accept any standard photo from your device!</span>
+                <span className="text-xs font-medium text-slate-700">Drag & drop, or click to add photos</span>
+                <span className="text-[11px] text-slate-500">JPG, PNG, or WebP from your phone or computer</span>
               </div>
             </div>
 
@@ -719,8 +718,8 @@ export default function CreatePostModal({ isOpen, onClose, currentUser }: Create
                     {/* Hover actions */}
                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex flex-col justify-between p-2">
                       <div className="flex items-center justify-between">
-                        <span className="px-1.5 py-0.5 bg-black/80 border border-slate-800 text-[8px] font-mono text-teal-400 rounded">
-                          CH #{index + 1}
+                        <span className="px-1.5 py-0.5 bg-black/80 text-[8px] text-white rounded">
+                          {index + 1}
                         </span>
                         <button
                           type="button"
@@ -737,8 +736,7 @@ export default function CreatePostModal({ isOpen, onClose, currentUser }: Create
                         size="sm"
                         className="w-full h-7 text-[10px] uppercase font-bold tracking-wider py-0 px-2 bg-violet-600 hover:bg-violet-500"
                       >
-                        <Sliders className="w-2.5 h-2.5 mr-1" />
-                        Canvas Edit
+                        Edit
                       </Button>
                     </div>
 
@@ -754,30 +752,30 @@ export default function CreatePostModal({ isOpen, onClose, currentUser }: Create
           </div>
 
           {/* 3. AUDIO-LINKED IMAGERY PRESETS */}
-          <div className="flex flex-col gap-2 p-3.5 bg-slate-900/30 border border-slate-900/80 rounded">
+          <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-slate-400 tracking-wider uppercase flex items-center gap-1.5">
-                <Volume2 className="w-4 h-4 text-violet-500 animate-pulse" />
-                Attach Ambient Audio Footprint (10s Ambient Loop)
+              <label className="text-xs font-semibold text-slate-600 flex items-center gap-1.5">
+                <Volume2 className="w-4 h-4 text-violet-500" />
+                Add a sound <span className="font-normal text-slate-400">(optional)</span>
               </label>
               {audioUrl && (
                 <button
                   type="button"
                   onClick={stopAudioPreview}
-                  className="text-[10px] font-bold text-rose-400 flex items-center gap-1 hover:text-rose-300 uppercase cursor-pointer"
+                  className="text-[11px] font-medium text-slate-500 flex items-center gap-1 hover:text-slate-800 cursor-pointer"
                 >
                   <VolumeX className="w-3.5 h-3.5" />
-                  Kill Preview
+                  Stop
                 </button>
               )}
             </div>
             
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 mt-1.5">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               {[
-                { id: 'cyber_drone', title: 'Sub-Bass Cyber Drone' },
-                { id: 'neon_synth', title: 'Tokyo Synthwave Pulse' },
-                { id: 'rainy_jazz', title: 'Rainy Alleyway Jazz' },
-                { id: 'vapor_echo', title: 'Retro Vapor Echo' },
+                { id: 'cyber_drone', title: 'Night city' },
+                { id: 'neon_synth', title: 'Synthwave' },
+                { id: 'rainy_jazz', title: 'Rainy jazz' },
+                { id: 'vapor_echo', title: 'Retro' },
               ].map((sound) => {
                 const isActive = audioUrl === sound.id;
                 return (
@@ -786,14 +784,14 @@ export default function CreatePostModal({ isOpen, onClose, currentUser }: Create
                     type="button"
                     onClick={() => handleAudioSelection(sound.id, sound.title)}
                     className={cn(
-                      'px-3 py-2 border rounded text-left flex flex-col justify-between gap-1 transition-all group cursor-pointer relative overflow-hidden',
+                      'px-3 py-2 border rounded text-left flex flex-col justify-between gap-1 transition-all group cursor-pointer',
                       isActive
-                        ? 'bg-violet-950/20 border-violet-500/60 shadow-[0_0_12px_rgba(124,58,237,0.15)]'
-                        : 'bg-slate-950/40 border-slate-900 hover:border-slate-800 hover:bg-slate-900/20'
+                        ? 'bg-violet-50 border-violet-300'
+                        : 'bg-white border-slate-200 hover:border-violet-200'
                     )}
                   >
                     <div className="flex items-center justify-between w-full">
-                      <span className={cn('text-[10px] font-bold truncate', isActive ? 'text-violet-300' : 'text-slate-400 group-hover:text-slate-300')}>
+                      <span className={cn('text-[11px] font-medium truncate', isActive ? 'text-violet-700' : 'text-slate-600')}>
                         {sound.title}
                       </span>
                       {isActive ? (
@@ -803,10 +801,10 @@ export default function CreatePostModal({ isOpen, onClose, currentUser }: Create
                           <span className="w-0.5 h-4 bg-violet-400 animate-bounce" style={{ animationDelay: '0.3s' }} />
                         </div>
                       ) : (
-                        <Play className="w-2.5 h-2.5 text-slate-600 group-hover:text-slate-400" />
+                        <Play className="w-2.5 h-2.5 text-slate-400" />
                       )}
                     </div>
-                    <span className="text-[8px] font-mono text-slate-600 uppercase">10s Synths</span>
+                    <span className="text-[10px] text-slate-400">10 sec</span>
                   </button>
                 );
               })}
@@ -814,39 +812,35 @@ export default function CreatePostModal({ isOpen, onClose, currentUser }: Create
           </div>
 
           {/* 7. VECTOR TEXT PANELS (Blogging inside slider) */}
-          <div className="flex flex-col gap-2 p-3.5 bg-slate-900/30 border border-slate-900/80 rounded">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-slate-400 tracking-wider uppercase flex items-center gap-1.5 cursor-pointer">
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-semibold text-slate-600 flex items-center gap-1.5 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={hasVectorPanel}
                   onChange={(e) => setHasVectorPanel(e.target.checked)}
-                  className="rounded border-slate-800 text-violet-500 focus:ring-violet-500/30 bg-slate-950"
+                  className="rounded border-slate-300 text-violet-500 focus:ring-violet-500/30"
                 />
-                <FileText className="w-4 h-4 text-violet-500" />
-                Inject Swipeable Markdown blogging slide
-              </label>
-              <span className="text-[8px] font-mono text-slate-600 uppercase">Dynamic Vector Panel</span>
-            </div>
+                Add a text slide <span className="font-normal text-slate-400">(optional)</span>
+            </label>
 
             {hasVectorPanel && (
-              <div className="flex flex-col gap-1.5 mt-1 animate-fadeIn">
+              <div className="flex flex-col gap-1.5 mt-1">
                 <textarea
                   value={vectorPanelText}
                   onChange={(e) => setVectorPanelText(e.target.value)}
-                  placeholder="# Cyberpunk Dreams&#10;Input markdown content detailing camera settings, production design workflows, or code segments here..."
+                  placeholder="Write a note that sits next to your photos..."
                   rows={4}
-                  className="w-full bg-slate-950/60 border border-slate-800 text-slate-100 placeholder:text-slate-700 px-3 py-2 text-xs font-mono rounded outline-none focus:border-violet-500/80 transition-all resize-none shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)]"
+                  className="w-full bg-white border border-slate-200 text-slate-800 placeholder:text-slate-400 px-3 py-2 text-sm rounded outline-none focus:border-violet-400 transition-all resize-none"
                 />
               </div>
             )}
           </div>
 
           {/* 8. LIVE CO-AUTHOR TEAM PIPELINE BIND */}
-          <div className="flex flex-col gap-2 p-3.5 bg-slate-900/30 border border-slate-900/80 rounded">
-            <label className="text-xs font-bold text-slate-400 tracking-wider uppercase flex items-center gap-1.5">
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-semibold text-slate-600 flex items-center gap-1.5">
               <Users className="w-4 h-4 text-violet-500" />
-              Co-Author Canvas pipeline
+              Tag people <span className="font-normal text-slate-400">(optional)</span>
             </label>
 
             <div className="flex gap-2">
@@ -860,16 +854,16 @@ export default function CreatePostModal({ isOpen, onClose, currentUser }: Create
                     addCoAuthor();
                   }
                 }}
-                placeholder="e.g. elena_pixels, marcus_rgb"
-                className="flex-1 bg-slate-950 border border-slate-900 text-slate-100 placeholder:text-slate-700 px-3 py-1.5 text-xs rounded outline-none focus:border-violet-500/80 transition-all"
+                placeholder="Username, e.g. elena_pixels"
+                className="flex-1 bg-white border border-slate-200 text-slate-800 placeholder:text-slate-400 px-3 py-2 text-sm rounded outline-none focus:border-violet-400"
               />
               <Button
                 type="button"
                 onClick={addCoAuthor}
                 size="sm"
-                className="bg-slate-900 hover:bg-slate-800 text-[10px] border border-slate-800 px-4"
+                className="bg-violet-600 hover:bg-violet-500 text-white text-[11px] px-4"
               >
-                Bind ID
+                Add
               </Button>
             </div>
 
@@ -887,14 +881,14 @@ export default function CreatePostModal({ isOpen, onClose, currentUser }: Create
 
                     <div className="flex items-center gap-3">
                       <span className="font-mono text-[9px] tracking-wide uppercase text-slate-500">
-                        {coAuthorStatuses[author] || 'SYNCING...'}
+                        {coAuthorStatuses[author] || 'Invited'}
                       </span>
                       <button
                         type="button"
                         onClick={() => removeCoAuthor(author)}
-                        className="text-rose-400 hover:text-rose-300 transition-colors text-[10px] font-bold cursor-pointer"
+                        className="text-slate-500 hover:text-rose-500 transition-colors text-[11px] font-medium cursor-pointer"
                       >
-                        Release
+                        Remove
                       </button>
                     </div>
                   </div>
@@ -903,36 +897,35 @@ export default function CreatePostModal({ isOpen, onClose, currentUser }: Create
             )}
           </div>
 
-          {/* Standard text elements (Caption & Location) */}
-          <div className="flex flex-col gap-4 p-1">
+          <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-slate-400 tracking-wider uppercase">Vivid Caption Signature</label>
+              <label className="text-xs font-semibold text-slate-600">Caption</label>
               <textarea
                 value={caption}
                 onChange={(e) => setCaption(e.target.value)}
-                placeholder="Inject descriptive metadata, digital visual signatures, or noir logs..."
+                placeholder="Write a caption..."
                 rows={3}
                 maxLength={1000}
-                className="w-full bg-slate-950 border border-slate-900 text-slate-100 placeholder:text-slate-700 px-4 py-2.5 text-xs rounded outline-none focus:border-violet-500/80 transition-all resize-none shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)]"
+                className="w-full bg-white border border-slate-200 text-slate-800 placeholder:text-slate-400 px-3 py-2.5 text-sm rounded outline-none focus:border-violet-400 transition-all resize-none"
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-slate-400 tracking-wider uppercase">Location Signature</label>
+              <label className="text-xs font-semibold text-slate-600">Location</label>
               <div className="relative">
-                <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" />
+                <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
                   type="text"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  placeholder="e.g. Roppongi Hills, Minato City"
-                  className="w-full bg-slate-950 border border-slate-900 text-slate-100 placeholder:text-slate-700 pl-10 pr-4 py-2.5 text-xs rounded outline-none focus:border-violet-500/80 transition-all"
+                  placeholder="Where was this taken?"
+                  className="w-full bg-white border border-slate-200 text-slate-800 placeholder:text-slate-400 pl-10 pr-4 py-2.5 text-sm rounded outline-none focus:border-violet-400"
                 />
               </div>
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-900">
+          <div className="sticky bottom-0 -mx-5 -mb-5 px-5 py-3 bg-white border-t border-slate-200 flex items-center justify-end gap-3">
             <Button
               type="button"
               variant="outline"
@@ -947,18 +940,15 @@ export default function CreatePostModal({ isOpen, onClose, currentUser }: Create
             <Button
               type="submit"
               disabled={isSubmitting || mediaUrls.length === 0}
-              className="gap-2"
+              className="gap-2 bg-violet-600 hover:bg-violet-500 text-white"
             >
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Sharing now...
+                  Sharing...
                 </>
               ) : (
-                <>
-                  <Layers className="w-4 h-4" />
-                  Share with Friends!
-                </>
+                'Share'
               )}
             </Button>
           </div>
