@@ -11,6 +11,7 @@ import {
 } from './crypto';
 import { clampBio, validateEmail, validatePassword, validateUsername } from './validation';
 import { sliceByCursor } from './pagination';
+import { DEFAULT_AVATAR, DEFAULT_IMAGE } from './media';
 
 // --- 1. AUTHENTICATION & SECURITY SYSTEM ---
 
@@ -63,7 +64,7 @@ export async function registerUser(formData: {
       passwordHash: hashed,
       displayName: formData.displayName.trim() || username.value,
       bio: clampBio(formData.bio),
-      avatarUrl: `https://picsum.photos/seed/${username.value}/300/300`,
+      avatarUrl: DEFAULT_AVATAR,
       website: null,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -606,7 +607,7 @@ export async function getDiscoverPosts(searchQuery = ''): Promise<DiscoverPost[]
 
     return {
       id: post.id,
-      imageUrl: media?.url || 'https://picsum.photos/seed/placeholder/800/800',
+      imageUrl: media?.url || DEFAULT_IMAGE,
       aspectRatioClass: aspectRatios[index % aspectRatios.length],
       likesCount,
       commentsCount,
@@ -844,7 +845,7 @@ export async function resolveLinkPreview(url: string): Promise<LinkPreviewData> 
   let codeSample = '';
   let title = 'Web Resource Link';
   let description = 'Unpacked secure payload snippet from the remote frame.';
-  let image = 'https://picsum.photos/seed/link_preview/400/250';
+  let image = DEFAULT_IMAGE;
 
   if (normalizedUrl.endsWith('.js') || (normalizedUrl.includes('github.com') && normalizedUrl.includes('.js'))) {
     isCodeAsset = true;
@@ -901,7 +902,7 @@ def extract_colors(image_path, num_clusters=5):
   } else if (normalizedUrl.includes('github.com')) {
     title = 'GitHub Repository - neon-canvas-vivid';
     description = 'Open-source web animations render loop built on dynamic canvas anchors.';
-    image = 'https://picsum.photos/seed/github/400/250';
+    image = DEFAULT_IMAGE;
   } else if (normalizedUrl.includes('stackoverflow.com')) {
     title = 'Stack Overflow: How to safely handle React context in concurrent rendering?';
     description = 'Discussion on resolving state cascades and hooks in high-frequency short-poll networks.';
@@ -1082,7 +1083,7 @@ export async function getCreatorAnalytics(userId: string): Promise<CreatorAnalyt
     topPerformingPost = {
       id: (topPost as Post).id,
       caption: (topPost as Post).caption,
-      imageUrl: media?.url || 'https://picsum.photos/seed/placeholder/800/800',
+      imageUrl: media?.url || DEFAULT_IMAGE,
       likesCount: db.postLikes.filter(l => l.postId === (topPost as Post).id).length,
       commentsCount: db.comments.filter(c => c.postId === (topPost as Post).id).length,
     };

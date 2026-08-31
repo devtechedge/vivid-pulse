@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Heart, Tag, Eye, Info, Sparkles } from 'luci
 import { PostMedia } from '@/lib/db';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
+import SafeImg from '@/components/ui/SafeImg';
 
 interface CarouselProps {
   media: PostMedia[];
@@ -200,20 +201,22 @@ export default function Carousel({
       return (
         <div className="w-full h-full grid grid-cols-5 gap-1 bg-black p-0.5">
           <div className="col-span-3 relative overflow-hidden group/stitch">
-            <img 
-              src={media[0].url} 
-              alt="Asymmetric Stitch Left" 
-              className="w-full h-full object-cover select-none pointer-events-none hover:scale-102 transition-transform duration-300" 
+            <SafeImg
+              kind="media"
+              src={media[0].url}
+              alt=""
+              className="w-full h-full object-cover select-none pointer-events-none hover:scale-102 transition-transform duration-300"
             />
             <span className="absolute bottom-2 left-2 px-1.5 py-0.5 bg-black/70 border border-slate-800/40 text-[8px] font-mono text-teal-400 rounded">
               CH #1
             </span>
           </div>
           <div className="col-span-2 relative overflow-hidden group/stitch">
-            <img 
-              src={media[1].url} 
-              alt="Asymmetric Stitch Right" 
-              className="w-full h-full object-cover select-none pointer-events-none hover:scale-102 transition-transform duration-300" 
+            <SafeImg
+              kind="media"
+              src={media[1].url}
+              alt=""
+              className="w-full h-full object-cover select-none pointer-events-none hover:scale-102 transition-transform duration-300"
             />
             <span className="absolute bottom-2 left-2 px-1.5 py-0.5 bg-black/70 border border-slate-800/40 text-[8px] font-mono text-teal-400 rounded">
               CH #2
@@ -228,10 +231,11 @@ export default function Carousel({
         <div className="w-full h-full grid grid-cols-3 gap-1 bg-black p-0.5">
           {media.slice(0, 3).map((item, idx) => (
             <div key={item.id} className="relative overflow-hidden group/stitch">
-              <img 
-                src={item.url} 
-                alt={`Triptych Panel ${idx + 1}`} 
-                className="w-full h-full object-cover select-none pointer-events-none hover:scale-102 transition-transform duration-300" 
+              <SafeImg
+                kind="media"
+                src={item.url}
+                alt=""
+                className="w-full h-full object-cover select-none pointer-events-none hover:scale-102 transition-transform duration-300"
               />
               <span className="absolute bottom-2 left-2 px-1.5 py-0.5 bg-black/70 border border-slate-800/40 text-[8px] font-mono text-teal-400 rounded">
                 CH #{idx + 1}
@@ -260,7 +264,7 @@ export default function Carousel({
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleMouseUpOrLeave}
-      className="relative w-full aspect-square select-none overflow-hidden bg-black flex items-center justify-center group cursor-pointer"
+      className="vp-media-frame relative w-full select-none overflow-hidden bg-black flex items-center justify-center group cursor-pointer"
     >
       {/* 9. Render Micro-Interaction Media Scrubber overlay laser lines during dragging */}
       {isScrubbing && (
@@ -291,13 +295,14 @@ export default function Carousel({
           renderVectorPanel()
         ) : (
           <div className="relative w-full h-full">
-            <img
-              src={media[currentIndex].url}
-              alt={`Visual Content ${currentIndex + 1}`}
-              className="w-full h-full object-cover select-none pointer-events-none"
-              draggable={false}
-              loading="lazy"
-            />
+            <SafeImg
+                kind="media"
+                src={media[currentIndex].url}
+                alt=""
+                className="w-full h-full object-cover select-none pointer-events-none"
+                draggable={false}
+                loading="lazy"
+              />
 
             {/* 4. Overlay pulsing focal anchors on the active image slide */}
             {currentIndex === 0 && parsedAnchors.map((anchor, idx) => {

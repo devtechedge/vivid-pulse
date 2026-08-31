@@ -7,6 +7,7 @@ import { User as UserType } from '@/lib/db';
 import StoryViewer from './StoryViewer';
 import CreateStoryModal from './CreateStoryModal';
 import { cn } from '@/lib/utils';
+import SafeImg from '@/components/ui/SafeImg';
 
 // Helper to determine stable mock latitude and longitude for visual coordinates grouping (Feature 14)
 function getUserCoordinates(userId: string, stories: any[]) {
@@ -152,9 +153,10 @@ export default function StoryTray() {
               className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer select-none group"
             >
               <div className="relative w-15 h-15 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center group-hover:border-violet-500/50 transition-colors">
-                <img
-                  src={currentUser.avatarUrl || 'https://picsum.photos/seed/placeholder/100/100'}
-                  alt="My Avatar"
+                <SafeImg
+                  kind="avatar"
+                  src={currentUser.avatarUrl || '/avatars/default.svg'}
+                  alt=""
                   className="w-13 h-13 rounded-full object-cover p-0.5"
                 />
                 
@@ -221,15 +223,16 @@ export default function StoryTray() {
 
                     {/* Avatar Body */}
                     <div className="w-13 h-13 rounded-full bg-slate-950 flex items-center justify-center p-[2px] z-20 overflow-hidden border border-slate-900">
-                      <img
-                        src={tray.avatarUrl || 'https://picsum.photos/seed/placeholder/100/100'}
-                        alt={tray.username}
+                      <SafeImg
+                        kind="avatar"
+                        src={tray.avatarUrl || '/avatars/default.svg'}
+                        alt=""
                         className="w-full h-full rounded-full object-cover"
                       />
                     </div>
                   </div>
                   
-                  <span className="text-[10px] font-bold text-slate-300 group-hover:text-slate-100 truncate w-14 text-center mt-0.5">
+                  <span className="vp-story-label text-slate-300 group-hover:text-slate-100 mt-0.5" title={`@${tray.username}`}>
                     @{tray.username}
                   </span>
                 </div>
@@ -272,7 +275,7 @@ export default function StoryTray() {
                           onClick={() => setActiveUserIndex(idx)}
                           className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-900 border border-slate-800 rounded hover:border-violet-500 cursor-pointer transition-all hover:bg-slate-900/60"
                         >
-                          <img src={tray.avatarUrl || 'https://picsum.photos/seed/placeholder'} alt={tray.username} className="w-5 h-5 rounded-full object-cover" />
+                          <SafeImg kind="avatar" src={tray.avatarUrl || '/avatars/default.svg'} alt="" className="vp-avatar w-5 h-5 rounded-full object-cover" />
                           <div className="flex flex-col leading-none">
                             <span className="text-[10px] font-bold text-slate-200">@{tray.username}</span>
                             <span className="text-[8px] font-sans text-violet-400 mt-0.5">{tray.distance} km</span>
@@ -302,7 +305,7 @@ export default function StoryTray() {
                           onClick={() => setActiveUserIndex(idx)}
                           className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-900 border border-slate-800 rounded hover:border-teal-500 cursor-pointer transition-all hover:bg-slate-900/60"
                         >
-                          <img src={tray.avatarUrl || 'https://picsum.photos/seed/placeholder'} alt={tray.username} className="w-5 h-5 rounded-full object-cover" />
+                          <SafeImg kind="avatar" src={tray.avatarUrl || '/avatars/default.svg'} alt="" className="vp-avatar w-5 h-5 rounded-full object-cover" />
                           <div className="flex flex-col leading-none">
                             <span className="text-[10px] font-bold text-slate-200">@{tray.username}</span>
                             <span className="text-[8px] font-sans text-teal-400 mt-0.5">{tray.distance} km</span>
@@ -332,7 +335,7 @@ export default function StoryTray() {
                           onClick={() => setActiveUserIndex(idx)}
                           className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-900 border border-slate-800 rounded hover:border-slate-500 cursor-pointer transition-all hover:bg-slate-900/60"
                         >
-                          <img src={tray.avatarUrl || 'https://picsum.photos/seed/placeholder'} alt={tray.username} className="w-5 h-5 rounded-full object-cover" />
+                          <SafeImg kind="avatar" src={tray.avatarUrl || '/avatars/default.svg'} alt="" className="vp-avatar w-5 h-5 rounded-full object-cover" />
                           <div className="flex flex-col leading-none">
                             <span className="text-[10px] font-bold text-slate-200">@{tray.username}</span>
                             <span className="text-[8px] font-sans text-slate-400 mt-0.5">{tray.distance} km</span>

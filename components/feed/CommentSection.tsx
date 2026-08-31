@@ -101,7 +101,7 @@ export default function CommentSection({ postId, onCommentCountChanged }: Commen
               {/* Parent Comment */}
               <div className="flex gap-3">
                 <img
-                  src={comment.avatarUrl || 'https://picsum.photos/seed/placeholder/100/100'}
+                  src={comment.avatarUrl || '/avatars/default.svg'}
                   alt={comment.username}
                   className="w-7 h-7 rounded object-cover border border-slate-800"
                 />
@@ -138,7 +138,7 @@ export default function CommentSection({ postId, onCommentCountChanged }: Commen
                     <div key={reply.id} className="flex gap-2.5">
                       <CornerDownRight className="w-3.5 h-3.5 text-slate-700 mt-1 flex-shrink-0" />
                       <img
-                        src={reply.avatarUrl || 'https://picsum.photos/seed/placeholder/100/100'}
+                        src={reply.avatarUrl || '/avatars/default.svg'}
                         alt={reply.username}
                         className="w-5.5 h-5.5 rounded object-cover border border-slate-800"
                       />

@@ -158,7 +158,7 @@ const getInitialSeedData = async (): Promise<DatabaseState> => {
       passwordHash: pHash,
       displayName: 'Alex Rivers',
       bio: 'Visual designer exploring high-contrast digital worlds. ✨ Tokyo-bound.',
-      avatarUrl: 'https://picsum.photos/seed/alex_avatar/300/300',
+      avatarUrl: '/avatars/alex.jpg',
       website: 'alexrivers.design',
       createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
       updatedAt: new Date().toISOString(),
@@ -170,7 +170,7 @@ const getInitialSeedData = async (): Promise<DatabaseState> => {
       passwordHash: pHash,
       displayName: 'Elena Rostova',
       bio: 'Neo-noir photographer. Chasing neon lights & rainy alleyways.',
-      avatarUrl: 'https://picsum.photos/seed/elena_avatar/300/300',
+      avatarUrl: '/avatars/elena.jpg',
       website: 'elenapixels.net',
       createdAt: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString(),
       updatedAt: new Date().toISOString(),
@@ -182,7 +182,7 @@ const getInitialSeedData = async (): Promise<DatabaseState> => {
       passwordHash: pHash,
       displayName: 'Marcus Chen',
       bio: 'Generative artist. Transforming signal noise into beautiful digital motion.',
-      avatarUrl: 'https://picsum.photos/seed/marcus_avatar/300/300',
+      avatarUrl: '/avatars/marcus.jpg',
       website: 'cyberpulse.io',
       createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
       updatedAt: new Date().toISOString(),
@@ -194,7 +194,7 @@ const getInitialSeedData = async (): Promise<DatabaseState> => {
       passwordHash: pHash,
       displayName: 'Sarah Jenkins',
       bio: 'Cinematographer and colorist. Lucid violet and kinetic teal obsessed.',
-      avatarUrl: 'https://picsum.photos/seed/sarah_avatar/300/300',
+      avatarUrl: '/avatars/sarah.jpg',
       website: 'neonlens.co',
       createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
       updatedAt: new Date().toISOString(),
@@ -206,7 +206,7 @@ const getInitialSeedData = async (): Promise<DatabaseState> => {
       passwordHash: pHash,
       displayName: 'Lucas Vance',
       bio: 'Geometric abstract painter. Simplicity is the ultimate sophistication.',
-      avatarUrl: 'https://picsum.photos/seed/lucas_avatar/300/300',
+      avatarUrl: '/avatars/lucas.jpg',
       website: 'kineticart.com',
       createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
       updatedAt: new Date().toISOString(),
@@ -266,16 +266,16 @@ const getInitialSeedData = async (): Promise<DatabaseState> => {
 
   // Post media (carousels)
   const postMedia: PostMedia[] = [
-    { id: 'media-1', postId: 'post-1', url: 'https://picsum.photos/seed/shinjuku_neon/800/800', type: 'IMAGE', orderIndex: 0 },
-    { id: 'media-2', postId: 'post-2', url: 'https://picsum.photos/seed/rainy_city/800/1000', type: 'IMAGE', orderIndex: 0 },
-    { id: 'media-3', postId: 'post-3', url: 'https://picsum.photos/seed/generative_art/800/800', type: 'IMAGE', orderIndex: 0 },
-    { id: 'media-4', postId: 'post-4', url: 'https://picsum.photos/seed/color_grade/800/800', type: 'IMAGE', orderIndex: 0 },
-    { id: 'media-5', postId: 'post-5', url: 'https://picsum.photos/seed/minimal_construct/800/1000', type: 'IMAGE', orderIndex: 0 },
+    { id: 'media-1', postId: 'post-1', url: '/media/shinjuku.jpg', type: 'IMAGE', orderIndex: 0 },
+    { id: 'media-2', postId: 'post-2', url: '/media/rain.jpg', type: 'IMAGE', orderIndex: 0 },
+    { id: 'media-3', postId: 'post-3', url: '/media/generative.jpg', type: 'IMAGE', orderIndex: 0 },
+    { id: 'media-4', postId: 'post-4', url: '/media/colorgrade.jpg', type: 'IMAGE', orderIndex: 0 },
+    { id: 'media-5', postId: 'post-5', url: '/media/geometric.jpg', type: 'IMAGE', orderIndex: 0 },
     
     // Carousel for post-6 (multiple items)
-    { id: 'media-6a', postId: 'post-6', url: 'https://picsum.photos/seed/tokyo_street_1/800/800', type: 'IMAGE', orderIndex: 0 },
-    { id: 'media-6b', postId: 'post-6', url: 'https://picsum.photos/seed/tokyo_street_2/800/800', type: 'IMAGE', orderIndex: 1 },
-    { id: 'media-6c', postId: 'post-6', url: 'https://picsum.photos/seed/tokyo_street_3/800/800', type: 'IMAGE', orderIndex: 2 }
+    { id: 'media-6a', postId: 'post-6', url: '/media/tokyo1.jpg', type: 'IMAGE', orderIndex: 0 },
+    { id: 'media-6b', postId: 'post-6', url: '/media/tokyo2.jpg', type: 'IMAGE', orderIndex: 1 },
+    { id: 'media-6c', postId: 'post-6', url: '/media/tokyo3.jpg', type: 'IMAGE', orderIndex: 2 }
   ];
 
   // Active Stories (within 24 hours)
@@ -283,7 +283,7 @@ const getInitialSeedData = async (): Promise<DatabaseState> => {
     {
       id: 'story-1',
       userId: 'user-1',
-      mediaUrl: 'https://picsum.photos/seed/alex_story/800/1400',
+      mediaUrl: '/media/story-alex.jpg',
       mediaType: 'IMAGE',
       expiresAt: new Date(Date.now() + 20 * 60 * 60 * 1000).toISOString(), // expires in 20 hours
       createdAt: new Date().toISOString()
@@ -291,7 +291,7 @@ const getInitialSeedData = async (): Promise<DatabaseState> => {
     {
       id: 'story-2',
       userId: 'user-2',
-      mediaUrl: 'https://picsum.photos/seed/elena_story/800/1400',
+      mediaUrl: '/media/story-elena.jpg',
       mediaType: 'IMAGE',
       expiresAt: new Date(Date.now() + 18 * 60 * 60 * 1000).toISOString(),
       createdAt: new Date().toISOString()
@@ -299,7 +299,7 @@ const getInitialSeedData = async (): Promise<DatabaseState> => {
     {
       id: 'story-3',
       userId: 'user-3',
-      mediaUrl: 'https://picsum.photos/seed/marcus_story/800/1400',
+      mediaUrl: '/media/story-marcus.jpg',
       mediaType: 'IMAGE',
       expiresAt: new Date(Date.now() + 22 * 60 * 60 * 1000).toISOString(),
       createdAt: new Date().toISOString()
@@ -307,7 +307,7 @@ const getInitialSeedData = async (): Promise<DatabaseState> => {
     {
       id: 'story-4',
       userId: 'user-4',
-      mediaUrl: 'https://picsum.photos/seed/sarah_story/800/1400',
+      mediaUrl: '/media/story-sarah.jpg',
       mediaType: 'IMAGE',
       expiresAt: new Date(Date.now() + 23 * 60 * 60 * 1000).toISOString(),
       createdAt: new Date().toISOString()
@@ -401,8 +401,8 @@ const getInitialSeedData = async (): Promise<DatabaseState> => {
   ];
 
   const skySnapshots = [
-    { id: 'sky-1', userId: 'user-1', imageUrl: 'https://picsum.photos/seed/sky1/600/400', description: 'Pastel dream above the rooftop this morning. 🌸☁️', createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString() },
-    { id: 'sky-2', userId: 'user-2', imageUrl: 'https://picsum.photos/seed/sky2/600/400', description: 'Ominous but gorgeous neon cloud setup right before the rain! ⚡🌧️', createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() },
+    { id: 'sky-1', userId: 'user-1', imageUrl: '/media/sky1.jpg', description: 'Pastel dream above the rooftop this morning. 🌸☁️', createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString() },
+    { id: 'sky-2', userId: 'user-2', imageUrl: '/media/sky2.jpg', description: 'Ominous but gorgeous neon cloud setup right before the rain! ⚡🌧️', createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() },
   ];
 
   const cookieJarTreats = [

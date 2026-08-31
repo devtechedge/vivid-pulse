@@ -12,6 +12,7 @@ import Carousel from './Carousel';
 import LikeButton from './LikeButton';
 import CommentSection from './CommentSection';
 import { cn } from '@/lib/utils';
+import SafeImg from '@/components/ui/SafeImg';
 
 interface PostCardProps {
   post: FeedPost;
@@ -553,10 +554,11 @@ export default function PostCard({ post, onRefresh }: PostCardProps) {
       {/* CARD HEADER */}
       <div className="flex items-center justify-between p-4 bg-slate-950 z-10">
         <div className="flex items-center gap-3">
-          <Link href={`/${post.username}`} className="relative group">
-            <img
-              src={post.avatarUrl || 'https://picsum.photos/seed/placeholder/100/100'}
-              alt={post.username}
+          <Link href={`/${post.username}`} className="relative group vp-avatar rounded overflow-hidden">
+            <SafeImg
+              kind="avatar"
+              src={post.avatarUrl || '/avatars/default.svg'}
+              alt=""
               className="w-10 h-10 rounded object-cover border border-slate-800 group-hover:border-violet-500/50 transition-colors"
             />
           </Link>

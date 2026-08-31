@@ -801,7 +801,7 @@ export default function MessagesPage() {
                       >
                         <div className="flex items-center gap-2 min-w-0">
                           <img 
-                            src={user.avatarUrl || 'https://picsum.photos/seed/placeholder/100/100'} 
+                            src={user.avatarUrl || '/avatars/default.svg'} 
                             alt={user.displayName} 
                             className="w-6 h-6 rounded object-cover border border-slate-800" 
                           />
@@ -858,7 +858,7 @@ export default function MessagesPage() {
                       >
                         <div className="relative flex-shrink-0">
                           <img
-                            src={conv.otherUser.avatarUrl || 'https://picsum.photos/seed/placeholder/100/100'}
+                            src={conv.otherUser.avatarUrl || '/avatars/default.svg'}
                             alt={conv.otherUser.username}
                             className="w-10 h-10 rounded object-cover border border-slate-800"
                           />
@@ -948,7 +948,7 @@ export default function MessagesPage() {
               <div className="px-5 py-3.5 border-b border-slate-900 bg-slate-950 flex items-center justify-between relative z-10">
                 <div className="flex items-center gap-3">
                   <img
-                    src={activeConv.otherUser.avatarUrl || 'https://picsum.photos/seed/placeholder/100/100'}
+                    src={activeConv.otherUser.avatarUrl || '/avatars/default.svg'}
                     alt={activeConv.otherUser.username}
                     className="w-10 h-10 rounded object-cover border border-slate-800"
                   />
@@ -1816,7 +1816,7 @@ export default function MessagesPage() {
                           className="rounded text-violet-600 bg-slate-950 border-slate-800 focus:ring-violet-500 accent-violet-600 cursor-pointer h-3.5 w-3.5"
                         />
                         <img 
-                          src={user.avatarUrl || 'https://picsum.photos/seed/placeholder/100/100'} 
+                          src={user.avatarUrl || '/avatars/default.svg'} 
                           alt={user.username} 
                           className="w-5 h-5 rounded object-cover border border-slate-800" 
                         />

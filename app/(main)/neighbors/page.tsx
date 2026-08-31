@@ -387,7 +387,7 @@ export default function CozyNeighborsPage() {
                 {/* Neighbor avatar & Active Vibe Badge */}
                 <div className="relative">
                   <img
-                    src={n.avatarUrl || 'https://picsum.photos/seed/placeholder/100/100'}
+                    src={n.avatarUrl || '/avatars/default.svg'}
                     alt={n.displayName}
                     className="w-14 h-14 rounded-full object-cover p-0.5 border border-slate-800 group-hover:border-violet-500/40 transition-colors"
                   />
@@ -558,7 +558,7 @@ export default function CozyNeighborsPage() {
 
                         <div className="flex items-center gap-2 border-t border-black/5 pt-2.5 mt-auto">
                           <img
-                            src={bulletin.avatarUrl || 'https://picsum.photos/seed/placeholder/50/50'}
+                            src={bulletin.avatarUrl || '/avatars/default.svg'}
                             alt={bulletin.displayName}
                             className="w-5 h-5 rounded-full object-cover border border-black/10"
                           />
@@ -839,7 +839,7 @@ export default function CozyNeighborsPage() {
                       required
                       value={skyUrl}
                       onChange={(e) => setSkyUrl(e.target.value)}
-                      placeholder="Image URL (e.g., https://picsum.photos/seed/sky/600/400)"
+                      placeholder="Image URL (e.g., /media/sky1.jpg)"
                       className="flex-1 bg-slate-900 border border-slate-800 text-[11px] px-3 py-1.5 rounded outline-none focus:border-sky-500"
                     />
                   </div>
@@ -877,7 +877,7 @@ export default function CozyNeighborsPage() {
                         />
                         <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm px-2 py-1 rounded">
                           <img
-                            src={sky.avatarUrl || 'https://picsum.photos/seed/placeholder/50/50'}
+                            src={sky.avatarUrl || '/avatars/default.svg'}
                             alt={sky.displayName}
                             className="w-4 h-4 rounded-full object-cover"
                           />
@@ -957,7 +957,7 @@ export default function CozyNeighborsPage() {
                         
                         <div className="flex items-center gap-2">
                           <img
-                            src={w.avatarUrl || 'https://picsum.photos/seed/placeholder/50/50'}
+                            src={w.avatarUrl || '/avatars/default.svg'}
                             alt={w.displayName}
                             className="w-4.5 h-4.5 rounded-full object-cover border border-slate-800"
                           />

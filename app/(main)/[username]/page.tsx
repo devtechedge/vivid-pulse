@@ -153,7 +153,7 @@ export default function ProfilePage() {
         <div className="relative w-24 h-24 md:w-28 md:h-28 rounded flex-shrink-0 bg-gradient-to-tr from-violet-600 to-teal-400 p-[3px] shadow-[0_0_20px_rgba(124,58,237,0.2)]">
           <div className="w-full h-full rounded bg-slate-950 p-[3px]">
             <img
-              src={user.avatarUrl || 'https://picsum.photos/seed/placeholder/150/150'}
+              src={user.avatarUrl || '/avatars/default.svg'}
               alt={user.displayName}
               className="w-full h-full rounded object-cover"
             />
@@ -329,7 +329,7 @@ export default function ProfilePage() {
                     )}
                   >
                     <img
-                      src={p.media[0]?.url || 'https://picsum.photos/seed/placeholder/300/300'}
+                      src={p.media[0]?.url || '/media/placeholder.jpg'}
                       alt="Post Media Cover"
                       className="w-full h-full object-cover select-none group-hover:scale-105 transition-transform duration-500"
                       loading="lazy"
@@ -382,7 +382,7 @@ export default function ProfilePage() {
                     )}
                   >
                     <img
-                      src={p.media[0]?.url || 'https://picsum.photos/seed/placeholder/300/300'}
+                      src={p.media[0]?.url || '/media/placeholder.jpg'}
                       alt="Post Media Cover"
                       className="w-full h-full object-cover select-none group-hover:scale-105 transition-transform duration-500"
                       loading="lazy"

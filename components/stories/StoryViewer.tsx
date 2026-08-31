@@ -403,7 +403,7 @@ export default function StoryViewer({ trays, initialUserIndex, isOpen, onClose }
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <img
-                  src={currentTray.avatarUrl || 'https://picsum.photos/seed/placeholder/100/100'}
+                  src={currentTray.avatarUrl || '/avatars/default.svg'}
                   alt={currentTray.username}
                   className="w-9 h-9 rounded-full object-cover border border-violet-500/80 p-0.5"
                 />

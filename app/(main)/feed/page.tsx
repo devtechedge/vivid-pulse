@@ -5,8 +5,10 @@ import { getFeed, FeedPost, getCurrentUser } from '@/lib/actions';
 import { User as UserType } from '@/lib/db';
 import PostCard from '@/components/feed/PostCard';
 import StoryTray from '@/components/stories/StoryTray';
+import Link from 'next/link';
 import { Loader2, RefreshCw, Layers, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import SafeImg from '@/components/ui/SafeImg';
 
 export default function FeedPage() {
   const [posts, setPosts] = React.useState<FeedPost[]>([]);
@@ -52,7 +54,8 @@ export default function FeedPage() {
   }, []);
 
   return (
-    <div data-testid="feed-page" className="w-full max-w-2xl mx-auto px-4 py-8 flex flex-col gap-8">
+    <div data-testid="feed-page" className="w-full max-w-[1080px] mx-auto px-4 py-8 grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_280px] gap-8 items-start">
+      <div className="w-full max-w-[680px] mx-auto xl:mx-0 xl:max-w-none flex flex-col gap-8 min-w-0">
       
       {/* 1. EPHEMERAL STORY BAR TRAY */}
       <StoryTray />
@@ -133,7 +136,42 @@ export default function FeedPage() {
           </div>
         )}
       </div>
+      </div>
 
+      <aside className="hidden xl:flex flex-col gap-4 sticky top-8">
+        <div className="bg-slate-950 border border-slate-900 rounded p-4 shadow-[0_4px_25px_rgba(0,0,0,0.4)]">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">Creators on the grid</p>
+          <div className="flex flex-col gap-3">
+            {Array.from(new Map(posts.map((p) => [p.username, p])).values())
+              .filter((p) => p.username !== currentUser?.username)
+              .slice(0, 5)
+              .map((p) => (
+                <Link
+                  key={p.username}
+                  href={`/${p.username}`}
+                  className="flex items-center gap-3 min-w-0 group"
+                >
+                  <SafeImg
+                    kind="avatar"
+                    src={p.avatarUrl || '/avatars/default.svg'}
+                    alt=""
+                    className="vp-avatar w-9 h-9 rounded-full object-cover border border-slate-800"
+                  />
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-slate-200 truncate group-hover:text-violet-300">{p.username}</p>
+                    <p className="text-[10px] text-slate-500 truncate">{p.location || 'On the grid'}</p>
+                  </div>
+                </Link>
+              ))}
+            {!loading && posts.length === 0 && (
+              <p className="text-[11px] text-slate-500">Follow people to fill this rail.</p>
+            )}
+          </div>
+        </div>
+        <p className="text-[10px] text-slate-600 px-1 leading-relaxed">
+          In-memory demo. Seed photos ship with the app so the feed never depends on a third-party image host.
+        </p>
+      </aside>
     </div>
   );
 }
