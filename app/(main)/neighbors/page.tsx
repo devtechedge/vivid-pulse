@@ -319,7 +319,7 @@ export default function CozyNeighborsPage() {
       </AnimatePresence>
 
       {/* HEADER HERO AREA */}
-      <div className="w-full bg-slate-900/40 border border-slate-900 rounded p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-[0_4px_30px_rgba(0,0,0,0.4)]">
+      <div className="vp-box w-full rounded p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-4">
           <div className="w-14 h-14 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
             <Coffee className="w-7 h-7" />
@@ -336,7 +336,7 @@ export default function CozyNeighborsPage() {
 
         {/* CURRENT USER VIBE UPDATE CARD */}
         {currentUser && (
-          <div className="bg-slate-950 p-4 rounded border border-slate-900 w-full md:max-w-xs flex flex-col gap-2.5">
+          <div className="vp-box p-4 rounded w-full md:max-w-xs flex flex-col gap-2.5">
             <div className="flex items-center gap-2">
               <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Set My Daily Vibe:</span>
             </div>
@@ -382,7 +382,7 @@ export default function CozyNeighborsPage() {
             return (
               <div 
                 key={n.id}
-                className="relative bg-slate-900/30 border border-slate-900 rounded p-4 flex flex-col items-center text-center gap-2 hover:border-violet-500/30 transition-all group"
+                className="vp-box relative rounded p-4 flex flex-col items-center text-center gap-2 transition-all group"
               >
                 {/* Neighbor avatar & Active Vibe Badge */}
                 <div className="relative">
@@ -479,7 +479,7 @@ export default function CozyNeighborsPage() {
         </div>
 
         {/* TAB CONTENTS CONTAINER */}
-        <div className="bg-slate-900/10 border border-slate-900 rounded p-6 min-h-[300px] shadow-sm">
+        <div className="vp-box rounded p-6 min-h-[300px]">
           
           {/* TAB A: THE BULLETIN BOARD */}
           {activeTab === 'board' && (
@@ -494,31 +494,20 @@ export default function CozyNeighborsPage() {
 
                 {/* Bulletin Poster Form */}
                 <form onSubmit={handlePostBulletin} className="flex flex-col sm:flex-row gap-2 max-w-md w-full">
-                  <div className="flex gap-2 flex-1">
-                    <select
-                      value={newBulletinColor}
-                      onChange={(e) => setNewBulletinColor(e.target.value)}
-                      className="bg-slate-950 border border-slate-800 text-[11px] px-2.5 py-1.5 rounded outline-none cursor-pointer"
-                    >
-                      <option value="yellow">💛 Pastel Yellow</option>
-                      <option value="green">💚 Soft Green</option>
-                      <option value="pink">💖 Gentle Pink</option>
-                    </select>
-                    <input
+                  <input
                       type="text"
                       required
                       value={newBulletinText}
                       onChange={(e) => setNewBulletinText(e.target.value.substring(0, 150))}
                       placeholder="Write a sweet message (e.g. Spotted lost kitty!)"
-                      className="flex-1 bg-slate-950/80 border border-slate-800 text-[11px] text-slate-200 px-3 py-2 rounded outline-none placeholder:text-slate-600 focus:border-amber-500"
+                      className="flex-1 bg-white border border-slate-200 text-[11px] text-slate-800 px-3 py-2 rounded outline-none placeholder:text-slate-400 focus:border-violet-400"
                     />
-                  </div>
                   <button
                     type="submit"
                     disabled={isPostingBulletin}
-                    className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold rounded text-[10px] uppercase tracking-wider cursor-pointer"
+                    className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white font-bold rounded text-[10px] uppercase tracking-wider cursor-pointer"
                   >
-                    {isPostingBulletin ? <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-950" /> : 'Pin Note'}
+                    {isPostingBulletin ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Pin Note'}
                   </button>
                 </form>
               </div>
@@ -529,26 +518,16 @@ export default function CozyNeighborsPage() {
                   <div className="col-span-3 py-12 text-center text-xs text-slate-600 italic">No notes pinned yet. Share something friendly!</div>
                 ) : (
                   bulletins.map((bulletin, index) => {
-                    const colorClasses = {
-                      yellow: "bg-amber-100 border-amber-200 text-amber-950 shadow-[0_4px_12px_rgba(245,158,11,0.15)]",
-                      green: "bg-emerald-100 border-emerald-200 text-emerald-950 shadow-[0_4px_12px_rgba(16,185,129,0.15)]",
-                      pink: "bg-rose-100 border-rose-200 text-rose-950 shadow-[0_4px_12px_rgba(244,63,94,0.15)]"
-                    }[bulletin.color as 'yellow' | 'green' | 'pink'] || "bg-amber-100";
-
                     return (
                       <motion.div
                         key={bulletin.id}
                         initial={{ opacity: 0, y: 15 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.05 }}
-                        className={cn(
-                          "p-5 rounded border relative font-sans flex flex-col justify-between min-h-[140px]",
-                          colorClasses
-                        )}
-                        style={{ transform: `rotate(${(index % 3 - 1) * 1.5}deg)` }}
+                        className="vp-box p-5 rounded relative font-sans flex flex-col justify-between min-h-[140px] text-slate-800"
                       >
                         {/* Red pin detail at the top center */}
-                        <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-rose-500 border border-rose-600 shadow-md flex items-center justify-center">
+                        <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-slate-300 border border-slate-400 flex items-center justify-center">
                           <div className="w-1.5 h-1.5 rounded-full bg-white opacity-60" />
                         </div>
 
@@ -589,7 +568,7 @@ export default function CozyNeighborsPage() {
                 </div>
 
                 {/* Stroll Creation Form */}
-                <form onSubmit={handleCreateStroll} className="bg-slate-950 p-4 rounded border border-slate-900 w-full md:max-w-md flex flex-col gap-3">
+                <form onSubmit={handleCreateStroll} className="vp-box p-4 rounded w-full md:max-w-md flex flex-col gap-3">
                   <span className="text-[9px] font-bold uppercase text-slate-400">Propose a Local Meetup/Walk:</span>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <input
@@ -638,7 +617,7 @@ export default function CozyNeighborsPage() {
                     const isAttending = currentUser ? stroll.attendees.includes(currentUser.username) : false;
 
                     return (
-                      <div key={stroll.id} className="bg-slate-900/40 border border-slate-900 rounded p-4 flex flex-col justify-between gap-4">
+                      <div key={stroll.id} className="vp-box rounded p-4 flex flex-col justify-between gap-4">
                         <div className="flex justify-between items-start">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
@@ -706,7 +685,7 @@ export default function CozyNeighborsPage() {
                 </div>
 
                 {/* Baked share Form */}
-                <form onSubmit={handlePostTreat} className="bg-slate-950 p-4 rounded border border-slate-900 w-full md:max-w-md flex flex-col gap-3">
+                <form onSubmit={handlePostTreat} className="vp-box p-4 rounded w-full md:max-w-md flex flex-col gap-3">
                   <span className="text-[9px] font-bold uppercase text-slate-400">Offer plates / baking treats:</span>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <input
@@ -757,7 +736,7 @@ export default function CozyNeighborsPage() {
                     const isClaimed = currentUser ? treat.claimedByUsernames.includes(currentUser.username) : false;
 
                     return (
-                      <div key={treat.id} className="bg-slate-900/40 border border-slate-900 rounded p-4 flex gap-4">
+                      <div key={treat.id} className="vp-box rounded p-4 flex gap-4">
                         {/* Treat image wrapper with emoji overlay */}
                         <div className="relative w-16 h-16 rounded bg-slate-950 border border-slate-800 flex items-center justify-center flex-shrink-0 text-3xl">
                           🧁
@@ -831,7 +810,7 @@ export default function CozyNeighborsPage() {
                 </div>
 
                 {/* Sky Snapshot Creation Form */}
-                <form onSubmit={handlePostSky} className="bg-slate-950 p-4 rounded border border-slate-900 w-full md:max-w-md flex flex-col gap-3">
+                <form onSubmit={handlePostSky} className="vp-box p-4 rounded w-full md:max-w-md flex flex-col gap-3">
                   <span className="text-[9px] font-bold uppercase text-slate-400">Share today&apos;s sky picture:</span>
                   <div className="flex gap-2">
                     <input
@@ -868,7 +847,7 @@ export default function CozyNeighborsPage() {
                   <div className="col-span-3 py-12 text-center text-xs text-slate-600 italic">No skies shared yet today. Look up and snap! ⛅</div>
                 ) : (
                   skySnaps.map(sky => (
-                    <div key={sky.id} className="bg-slate-900/40 border border-slate-900 rounded overflow-hidden flex flex-col gap-2 p-2">
+                    <div key={sky.id} className="vp-box rounded overflow-hidden flex flex-col gap-2 p-2">
                       <div className="relative aspect-[3/2] w-full rounded overflow-hidden">
                         <img
                           src={sky.imageUrl}
@@ -912,7 +891,7 @@ export default function CozyNeighborsPage() {
                 </div>
 
                 {/* Wisdom reflection Form */}
-                <form onSubmit={handlePostWisdom} className="bg-slate-950 p-4 rounded border border-slate-900 w-full md:max-w-md flex flex-col gap-3">
+                <form onSubmit={handlePostWisdom} className="vp-box p-4 rounded w-full md:max-w-md flex flex-col gap-3">
                   <span className="text-[9px] font-bold uppercase text-slate-400">Answer Weekly Prompt:</span>
                   <select
                     value={wisdomPrompt}
@@ -949,7 +928,7 @@ export default function CozyNeighborsPage() {
                   <div className="py-12 text-center text-xs text-slate-600 italic">No reflections shared yet. Share some warm wisdom!</div>
                 ) : (
                   wisdom.map(w => (
-                    <div key={w.id} className="bg-slate-900/40 border border-slate-900 rounded p-4 flex flex-col gap-2.5">
+                    <div key={w.id} className="vp-box rounded p-4 flex flex-col gap-2.5">
                       <div className="flex justify-between items-center pb-2 border-b border-slate-900/40">
                         <span className="text-[10px] font-semibold text-violet-400 bg-violet-950/20 px-2.5 py-0.5 rounded border border-violet-950/20">
                           Prompt: {w.prompt}
@@ -987,7 +966,7 @@ export default function CozyNeighborsPage() {
                 </div>
 
                 {/* Kindness post Form */}
-                <form onSubmit={handlePostHelp} className="bg-slate-950 p-4 rounded border border-slate-900 w-full md:max-w-md flex flex-col gap-3">
+                <form onSubmit={handlePostHelp} className="vp-box p-4 rounded w-full md:max-w-md flex flex-col gap-3">
                   <span className="text-[9px] font-bold uppercase text-slate-400">Post an offer or request:</span>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <input
@@ -1033,7 +1012,7 @@ export default function CozyNeighborsPage() {
                   <div className="col-span-2 py-12 text-center text-xs text-slate-600 italic">All quiet! No favor requests or offers at the moment.</div>
                 ) : (
                   helps.map(help => (
-                    <div key={help.id} className="bg-slate-900/40 border border-slate-900 rounded p-4 flex flex-col justify-between gap-3">
+                    <div key={help.id} className="vp-box rounded p-4 flex flex-col justify-between gap-3">
                       <div className="flex justify-between items-start gap-2">
                         <div className="flex items-center gap-3">
                           <div className={cn(
@@ -1095,7 +1074,7 @@ export default function CozyNeighborsPage() {
                 </div>
 
                 {/* Soundscape creation Form */}
-                <form onSubmit={handlePostSound} className="bg-slate-950 p-4 rounded border border-slate-900 w-full md:max-w-md flex flex-col gap-3">
+                <form onSubmit={handlePostSound} className="vp-box p-4 rounded w-full md:max-w-md flex flex-col gap-3">
                   <span className="text-[9px] font-bold uppercase text-slate-400">Capture local hum sound:</span>
                   <div className="flex gap-2">
                     <input
@@ -1126,7 +1105,7 @@ export default function CozyNeighborsPage() {
                     <div 
                       key={sound.id} 
                       className={cn(
-                        "bg-slate-900/40 border p-4 rounded flex items-center justify-between gap-4 transition-all",
+                        "vp-box p-4 rounded flex items-center justify-between gap-4 transition-all",
                         isPlaying ? "border-indigo-500/40 bg-indigo-950/5" : "border-slate-900"
                       )}
                     >
