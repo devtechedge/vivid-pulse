@@ -455,22 +455,22 @@ export default function CozyNeighborsPage() {
         {/* TAB SWITCHER */}
         <div className="flex border-b border-slate-900 overflow-x-auto scrollbar-none pb-0.5 gap-1">
           {[
-            { id: 'board', label: '📌 Neighbor Bulletin', color: 'text-amber-400 border-amber-500' },
-            { id: 'strolls', label: '🚶‍♀️ Cozy Strolls', color: 'text-emerald-400 border-emerald-500' },
-            { id: 'kitchen', label: '🧁 The Cookie Jar', color: 'text-rose-400 border-rose-500' },
-            { id: 'sky', label: '☁️ Sky Window', color: 'text-sky-400 border-sky-500' },
-            { id: 'wisdom', label: '📜 Wisdom Corner', color: 'text-violet-400 border-violet-500' },
-            { id: 'kindness', label: '🤝 Helping Hands', color: 'text-teal-400 border-teal-500' },
-            { id: 'sounds', label: '🎧 Local Hums', color: 'text-indigo-400 border-indigo-500' }
+            { id: 'board', label: '📌 Neighbor Bulletin' },
+            { id: 'strolls', label: '🚶‍♀️ Cozy Strolls' },
+            { id: 'kitchen', label: '🧁 The Cookie Jar' },
+            { id: 'sky', label: '☁️ Sky Window' },
+            { id: 'wisdom', label: '📜 Wisdom Corner' },
+            { id: 'kindness', label: '🤝 Helping Hands' },
+            { id: 'sounds', label: '🎧 Local Hums' }
           ].map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
               className={cn(
                 "px-4 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-all whitespace-nowrap cursor-pointer",
-                activeTab === tab.id 
-                  ? `${tab.color} bg-slate-900/30` 
-                  : "border-transparent text-slate-500 hover:text-slate-300"
+                activeTab === tab.id
+                  ? "text-slate-100 border-violet-500 bg-violet-600/10"
+                  : "border-transparent text-slate-500 hover:text-slate-200"
               )}
             >
               {tab.label}
@@ -486,7 +486,7 @@ export default function CozyNeighborsPage() {
             <div className="flex flex-col gap-6">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex flex-col">
-                  <h3 className="text-sm font-bold text-amber-400 flex items-center gap-1.5">
+                  <h3 className="text-sm font-bold text-slate-100 flex items-center gap-1.5">
                     📌 Interactive Neighborhood bulletins
                   </h3>
                   <span className="text-[10px] text-slate-500 font-sans mt-0.5">Write simple sticky notes, share lost items, or tell quick cozy local updates!</span>
@@ -561,7 +561,7 @@ export default function CozyNeighborsPage() {
             <div className="flex flex-col gap-6">
               <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
                 <div className="flex flex-col">
-                  <h3 className="text-sm font-bold text-emerald-400 flex items-center gap-1.5">
+                  <h3 className="text-sm font-bold text-slate-100 flex items-center gap-1.5">
                     🚶‍♀️ Cozy Strolls & Dog walks
                   </h3>
                   <span className="text-[10px] text-slate-500 font-sans mt-0.5">Organize zero-pressure morning walking routines, bird-watching, or courtyard tea meetups!</span>
@@ -678,7 +678,7 @@ export default function CozyNeighborsPage() {
             <div className="flex flex-col gap-6">
               <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
                 <div className="flex flex-col">
-                  <h3 className="text-sm font-bold text-rose-400 flex items-center gap-1.5">
+                  <h3 className="text-sm font-bold text-slate-100 flex items-center gap-1.5">
                     🧁 The Cookie Jar (Treat Sharing)
                   </h3>
                   <span className="text-[10px] text-slate-500 font-sans mt-0.5">Baked extra cookies, lemons, or home-cooked pies? Share a plate with neighbors!</span>
@@ -803,7 +803,7 @@ export default function CozyNeighborsPage() {
             <div className="flex flex-col gap-6">
               <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
                 <div className="flex flex-col">
-                  <h3 className="text-sm font-bold text-sky-400 flex items-center gap-1.5">
+                  <h3 className="text-sm font-bold text-slate-100 flex items-center gap-1.5">
                     ☁️ Neighborhood Sky Window
                   </h3>
                   <span className="text-[10px] text-slate-500 font-sans mt-0.5">Snap a simple picture of the clouds, sunset, or morning sky and share it with everyone!</span>
@@ -884,7 +884,7 @@ export default function CozyNeighborsPage() {
             <div className="flex flex-col gap-6">
               <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
                 <div className="flex flex-col">
-                  <h3 className="text-sm font-bold text-violet-400 flex items-center gap-1.5">
+                  <h3 className="text-sm font-bold text-slate-100 flex items-center gap-1.5">
                     📜 Generational Wisdom Corner
                   </h3>
                   <span className="text-[10px] text-slate-500 font-sans mt-0.5">Let&apos;s connect through simple storytelling. Share small memoirs, advice, or childhood stories!</span>
@@ -959,7 +959,7 @@ export default function CozyNeighborsPage() {
             <div className="flex flex-col gap-6">
               <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
                 <div className="flex flex-col">
-                  <h3 className="text-sm font-bold text-teal-400 flex items-center gap-1.5">
+                  <h3 className="text-sm font-bold text-slate-100 flex items-center gap-1.5">
                     🤝 Simple Helping Hands (Acts of Kindness)
                   </h3>
                   <span className="text-[10px] text-slate-500 font-sans mt-0.5">Need a ladder? Can water plants for anyone? Post small favors or offers here!</span>
@@ -1067,7 +1067,7 @@ export default function CozyNeighborsPage() {
             <div className="flex flex-col gap-6">
               <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
                 <div className="flex flex-col">
-                  <h3 className="text-sm font-bold text-indigo-400 flex items-center gap-1.5">
+                  <h3 className="text-sm font-bold text-slate-100 flex items-center gap-1.5">
                     🎧 Neighborhood Hum Soundscapes
                   </h3>
                   <span className="text-[10px] text-slate-500 font-sans mt-0.5">Listen to peaceful daily ambient noises captured locally (e.g. courtyard rain, chirping swallows)!</span>
