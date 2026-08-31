@@ -124,17 +124,23 @@ body {
 [data-theme="light"] .bg-slate-950\/80,
 [data-theme="light"] .bg-slate-950\/90,
 [data-theme="light"] .bg-slate-950\/95,
+[data-theme="light"] .bg-slate-950\/60,
+[data-theme="light"] .bg-slate-950\/50,
+[data-theme="light"] .bg-slate-950\/40,
 [data-theme="light"] .bg-slate-950\/30,
 [data-theme="light"] .bg-slate-950\/20 {
   background-color: #ffffff !important;
 }
 [data-theme="light"] .bg-slate-900,
+[data-theme="light"] .bg-slate-900\/80,
+[data-theme="light"] .bg-slate-900\/60,
 [data-theme="light"] .bg-slate-900\/40,
 [data-theme="light"] .bg-slate-900\/50,
-[data-theme="light"] .bg-slate-900\/60,
 [data-theme="light"] .bg-slate-900\/30,
 [data-theme="light"] .bg-slate-900\/20,
-[data-theme="light"] .bg-slate-900\/10 {
+[data-theme="light"] .bg-slate-900\/10,
+[data-theme="light"] .bg-slate-800,
+[data-theme="light"] .bg-slate-800\/80 {
   background-color: #ffffff !important;
 }
 [data-theme="light"] .text-slate-100,
@@ -181,7 +187,12 @@ body {
   box-shadow: none !important;
 }
 
-/* Cozy Neighbors: every card/note is the same white panel (no pastel/gray fills). */
+[data-theme="light"] [data-testid="messages-page"] [class*="bg-slate-"] {
+  background-color: #ffffff !important;
+}
+[data-theme="light"] [data-testid="messages-page"] {
+  background-color: #ffffff !important;
+}
 .vp-box {
   background-color: #ffffff !important;
   border: 1px solid #e5e7eb !important;

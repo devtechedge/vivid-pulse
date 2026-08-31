@@ -629,7 +629,7 @@ export default function MessagesPage() {
     <div data-testid="messages-page" className="w-full max-w-7xl mx-auto px-4 py-6 h-[calc(100vh-1rem)] flex flex-col gap-4 font-sans select-none">
       
       {/* GLOWING SYSTEM HEADER */}
-      <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded border bg-slate-950/60 border-slate-900 shadow-lg">
+      <div className="vp-box flex flex-wrap items-center justify-between gap-4 p-4 rounded">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded bg-violet-500/10 border border-violet-500/30 text-violet-400">
             <Binary className="w-5 h-5 animate-pulse" />
@@ -646,7 +646,7 @@ export default function MessagesPage() {
 
         <div className="flex items-center gap-3">
           {/* FEATURE 21: TELEMETRY POLLED VELOCITY WATCHER */}
-          <div className="flex items-center gap-2.5 px-3 py-1.5 bg-slate-900 border border-slate-800 rounded text-[10px] font-sans text-slate-400 shadow-inner">
+          <div className="vp-box flex items-center gap-2.5 px-3 py-1.5 rounded text-[10px] font-sans text-slate-400">
             <span className={cn("w-1.5 h-1.5 rounded-full animate-ping", isTyping ? "bg-amber-400" : "bg-teal-400")} />
             <span className={cn("font-bold", isTyping ? "text-amber-400 animate-pulse" : "text-teal-400")}>
               {isTyping ? "💬 Friend is typing..." : "🟢 Online and ready"}
@@ -665,7 +665,7 @@ export default function MessagesPage() {
         </div>
       </div>
 
-      <div className="flex-1 bg-slate-950 border border-slate-900 rounded overflow-hidden flex shadow-2xl h-[650px] relative">
+      <div className="vp-box flex-1 rounded overflow-hidden flex h-[650px] relative">
         
         {/* ========================================================
             LEFT RAIL: PRIORITY MATRIX & CONVERSATIONS INDEXER
@@ -695,7 +695,7 @@ export default function MessagesPage() {
                   "p-2 text-[10px] font-bold uppercase tracking-wider border rounded text-center cursor-pointer transition-all",
                   priorityMatrixFilter === 'ALL'
                     ? "bg-violet-600/10 border-violet-500/40 text-violet-300 shadow-sm"
-                    : "bg-slate-900/30 border-slate-900 hover:border-slate-800 text-slate-500 hover:text-slate-300"
+                    : "bg-white border-slate-200 hover:border-slate-300 text-slate-500 hover:text-slate-700"
                 )}
                 id="pm_all"
               >
@@ -707,7 +707,7 @@ export default function MessagesPage() {
                   "p-2 text-[10px] font-bold uppercase tracking-wider border rounded text-center cursor-pointer transition-all",
                   priorityMatrixFilter === 'PRIORITY'
                     ? "bg-amber-600/10 border-amber-500/40 text-amber-300 shadow-sm"
-                    : "bg-slate-900/30 border-slate-900 hover:border-slate-800 text-slate-500 hover:text-slate-300"
+                    : "bg-white border-slate-200 hover:border-slate-300 text-slate-500 hover:text-slate-700"
                 )}
                 id="pm_priority"
               >
@@ -719,7 +719,7 @@ export default function MessagesPage() {
                   "p-2 text-[10px] font-bold uppercase tracking-wider border rounded text-center cursor-pointer transition-all",
                   priorityMatrixFilter === 'TECH'
                     ? "bg-teal-600/10 border-teal-500/40 text-teal-300 shadow-sm"
-                    : "bg-slate-900/30 border-slate-900 hover:border-slate-800 text-slate-500 hover:text-slate-300"
+                    : "bg-white border-slate-200 hover:border-slate-300 text-slate-500 hover:text-slate-700"
                 )}
                 id="pm_tech"
               >
@@ -731,7 +731,7 @@ export default function MessagesPage() {
                   "p-2 text-[10px] font-bold uppercase tracking-wider border rounded text-center cursor-pointer transition-all",
                   priorityMatrixFilter === 'STASHED'
                     ? "bg-pink-600/10 border-pink-500/40 text-pink-300 shadow-sm"
-                    : "bg-slate-900/30 border-slate-900 hover:border-slate-800 text-slate-500 hover:text-slate-300"
+                    : "bg-white border-slate-200 hover:border-slate-300 text-slate-500 hover:text-slate-700"
                 )}
                 id="pm_stashed"
               >
@@ -1500,15 +1500,15 @@ export default function MessagesPage() {
             </>
           ) : (
             // No selected chat empty placeholder
-            <div className="flex-grow flex flex-col items-center justify-center text-slate-600 gap-4 p-8 text-center bg-slate-950/40">
-              <MessageSquare className="w-12 h-12 text-slate-850 animate-pulse" />
+            <div className="flex-grow flex flex-col items-center justify-center text-slate-600 gap-4 p-8 text-center bg-white">
+              <MessageSquare className="w-12 h-12 text-slate-400" />
               <div>
-                <h3 className="text-xs font-black uppercase tracking-widest text-slate-300">Terminal Static</h3>
+                <h3 className="text-xs font-black uppercase tracking-widest text-slate-800">Pick a chat</h3>
                 <p className="text-[11.5px] text-slate-500 max-w-sm leading-relaxed mt-1.5 font-light">
-                  Select an active communication pipeline from the Priority Matrix indexer rail on the left, or dispatch concurrent blast transmissions using the top action trigger.
+                  Select a conversation on the left, or start a group chat with the button above.
                 </p>
               </div>
-              <div className="flex items-center gap-2 p-3 bg-slate-900/30 border border-slate-900 rounded max-w-sm mt-2 text-left">
+              <div className="vp-box flex items-center gap-2 p-3 rounded max-w-sm mt-2 text-left">
                 <Info className="w-5 h-5 text-violet-400 flex-shrink-0" />
                 <span className="text-[10px] text-slate-500 font-mono leading-normal">
                   VIP priority, tech logging matrices, volatile decay, voice rates, and persistent shared header Pinboards are initialized automatically inside chosen streams.
