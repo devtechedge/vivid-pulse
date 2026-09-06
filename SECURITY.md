@@ -1,6 +1,6 @@
 # Security Assessment — VividPulse
 
-**Date:** 2026-08-24  
+**Date:** 2026-09-06  
 **Scope:** Auth, XSS, injection, cookies, secrets, dependency risk, persistence  
 **Context:** Public deploy is a **portfolio demo**. Feed, stories, DMs, and neighbors live in **process memory** (`globalThis`). They reset on cold start. There is no production Postgres on Vercel.
 
@@ -132,3 +132,11 @@ npm run test:e2e
 ```
 
 To report a vulnerability, open a GitHub security advisory or an issue. Rotate `SESSION_SECRET` if a production secret is ever introduced.
+
+## Repository visibility
+
+This repository is currently **public** for portfolio review. When the open-source
+build story is no longer needed, **the GitHub repo will go private**. Making the
+repo private reduces source disclosure; it does **not** replace strong production
+secrets, auth allow-lists, webhook signatures, or Vercel/Actions environment
+hygiene. Rotate any credential that was pasted into chat, tickets, or screenshots.

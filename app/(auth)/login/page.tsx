@@ -4,7 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Shield, Sparkles, Loader2, ArrowRight, UserCheck } from 'lucide-react';
-import { loginUser } from '@/lib/actions';
+import { loginUser, loginDemoUser } from '@/lib/actions';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 
@@ -44,9 +44,9 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
     setUsernameOrEmail(username);
-    setPassword('password123');
+    setPassword('');
     try {
-      const res = await loginUser({ usernameOrEmail: username, passwordHash: 'password123' });
+      const res = await loginDemoUser(username);
       if (res.success) {
         router.push('/feed');
         router.refresh();
@@ -151,7 +151,7 @@ export default function LoginPage() {
             </button>
           </div>
           <span className="text-[9px] font-mono text-slate-600 text-center">
-            Password is default: password123
+            Demo password is server-side; see SECURITY.md (public by design).
           </span>
         </div>
 
