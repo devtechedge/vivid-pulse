@@ -2,7 +2,7 @@
   "name": "vivid-pulse",
   "version": "1.0.0",
   "private": true,
-  "description": "Neo-noir visual social network — photo feed, stories, DMs, and a cozy neighbors board. In-memory demo.",
+  "description": "Neo-noir visual social network - photo feed, stories, DMs, and a cozy neighbors board. In-memory demo.",
   "scripts": {
     "dev": "next dev -p 3000",
     "build": "next build",

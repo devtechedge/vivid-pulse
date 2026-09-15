@@ -1,6 +1,6 @@
 # VividPulse
 
-Neo-noir visual social network. A seeded photo feed, 24-hour stories, DMs, and a cozy neighbors board — built with Next.js 15.
+Neo-noir visual social network. A seeded photo feed, 24-hour stories, DMs, and a cozy neighbors board - built with Next.js 15.
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-black?logo=vercel)](https://vividpulse-social.vercel.app)
 [![CI](https://github.com/devtechedge/vivid-pulse/actions/workflows/ci.yml/badge.svg)](https://github.com/devtechedge/vivid-pulse/actions/workflows/ci.yml)
@@ -15,7 +15,7 @@ Neo-noir visual social network. A seeded photo feed, 24-hour stories, DMs, and a
 
 **https://vividpulse-social.vercel.app**
 
-Do **not** use https://vividpulse.vercel.app — that hostname is a different AI-automation product.
+Do **not** use https://vividpulse.vercel.app - that hostname is a different AI-automation product.
 
 > **Status:** The public site is a **demo**. Auth is a signed `vp_session` cookie (not JWT / NextAuth). Posts, stories, and DMs live in **process memory** and reset on cold start. Seeded login: `alex_vivid` / `password123` (or the one-click ports on the login screen).
 
@@ -48,7 +48,7 @@ This is the **only** public repo for the project.
 - 24-hour stories tray and viewer
 - Discover search over captions and locations
 - Direct messages with polling
-- Cozy Neighbors hub — vibes, bulletin notes, strolls, treats
+- Cozy Neighbors hub - vibes, bulletin notes, strolls, treats
 - Session cookie is httpOnly + `SameSite=lax` (`secure` in production)
 
 ---
@@ -63,7 +63,7 @@ This is the **only** public repo for the project.
 | Auth | SHA-256 password hash + signed session cookie |
 | Media | Mock `/api/upload` (data URLs). Feed images from picsum.photos |
 | Hosting | Vercel |
-| CI | GitHub Actions — Vitest, `tsc`, Playwright |
+| CI | GitHub Actions - Vitest, `tsc`, Playwright |
 
 ---
 

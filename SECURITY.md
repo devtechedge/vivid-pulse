@@ -1,4 +1,4 @@
-# Security Assessment — VividPulse
+# Security Assessment - VividPulse
 
 **Date:** 2026-09-06  
 **Scope:** Auth, XSS, injection, cookies, secrets, dependency risk, persistence  
@@ -19,7 +19,7 @@
 | Dependency CVEs | **Low** | Unused Gemini / Blob / Postgres / firebase-tools / hookform removed |
 | Build config | **Hardened** | `ignoreBuildErrors` is **false** |
 
-**Overall (public demo):** Medium residual risk by design — signed cookies, but a public password and an in-memory store. Do not treat this as a production social network.
+**Overall (public demo):** Medium residual risk by design - signed cookies, but a public password and an in-memory store. Do not treat this as a production social network.
 
 ---
 

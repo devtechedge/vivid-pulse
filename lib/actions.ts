@@ -1580,7 +1580,7 @@ export async function createNeighborhoodSound(title: string, audioDataUrl: strin
   return { success: true, sound: newSound };
 }
 
-/** Demo quick-port — password compared only on the server (not shipped to the client bundle). */
+/** Demo quick-port - password compared only on the server (not shipped to the client bundle). */
 const DEMO_PASSWORD = process.env.DEMO_PASSWORD?.trim() || 'password123';
 
 export async function loginDemoUser(username: string) {
