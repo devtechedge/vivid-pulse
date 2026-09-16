@@ -2,10 +2,26 @@ import type { Metadata } from 'next';
 import './globals.css';
 import ThemeToggle from '@/components/ThemeToggle';
 
+const PAGE_TITLE = 'VividPulse | Visual Social Network';
+const PAGE_DESCRIPTION =
+  'Neo-noir photo sharing network with a feed, stories, DMs, and a cozy neighbors board. Seeded in-memory demo.';
+const SITE_URL = 'https://vividpulse-social.vercel.app';
+
 export const metadata: Metadata = {
-  title: 'VividPulse | Visual Social Network',
-  description:
-    'Neo-noir photo sharing network with a feed, stories, DMs, and a cozy neighbors board. Seeded in-memory demo.',
+  title: PAGE_TITLE,
+  description: PAGE_DESCRIPTION,
+  // Shared links (LinkedIn, Slack, email) render a bare URL without these.
+  openGraph: {
+    title: PAGE_TITLE,
+    description: PAGE_DESCRIPTION,
+    url: SITE_URL,
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary',
+    title: PAGE_TITLE,
+    description: PAGE_DESCRIPTION,
+  },
   icons: {
     icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
   },
