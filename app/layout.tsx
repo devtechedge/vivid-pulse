@@ -16,11 +16,13 @@ export const metadata: Metadata = {
     description: PAGE_DESCRIPTION,
     url: SITE_URL,
     type: 'website',
+    images: [{ url: 'https://vividpulse-social.vercel.app/og.png', width: 1200, height: 630, alt: 'VividPulse | Visual Social Network' }],
   },
   twitter: {
-    card: 'summary',
+    card: 'summary_large_image',
     title: PAGE_TITLE,
     description: PAGE_DESCRIPTION,
+    images: ['https://vividpulse-social.vercel.app/og.png'],
   },
   icons: {
     icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
