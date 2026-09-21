@@ -37,7 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT }} />
       </head>
-      <body className="bg-[#0B0F19] text-slate-100 min-h-screen" suppressHydrationWarning>
+      <body className="bg-[#0B0F19] text-slate-100 min-h-screen overflow-x-hidden" suppressHydrationWarning>
         <div className="theme-toggle-slot">
           <ThemeToggle />
         </div>

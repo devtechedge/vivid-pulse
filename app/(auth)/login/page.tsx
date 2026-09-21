@@ -61,7 +61,7 @@ export default function LoginPage() {
   };
 
   return (
-    <main data-testid="login-page" className="min-h-screen bg-[#070A13] flex flex-col items-center justify-center p-4 relative overflow-hidden">
+    <main data-testid="login-page" className="min-h-screen w-full max-w-[100vw] overflow-x-hidden bg-[#070A13] flex flex-col items-center justify-center p-4 relative">
       
       {/* Decorative Neon Background Blurs */}
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-violet-600/10 rounded-full filter blur-[100px] pointer-events-none" />
@@ -128,7 +128,7 @@ export default function LoginPage() {
           <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
             Aesthetic Quick Ports (Presigned)
           </span>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-2 min-[380px]:grid-cols-2">
             <button
               onClick={() => handleQuickLogin('alex_vivid')}
               disabled={loading}

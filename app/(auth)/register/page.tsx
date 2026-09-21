@@ -51,7 +51,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#070A13] flex flex-col items-center justify-center p-4 relative overflow-hidden">
+    <main className="min-h-screen w-full max-w-[100vw] overflow-x-hidden bg-[#070A13] flex flex-col items-center justify-center p-4 relative">
       
       {/* Decorative background gradients */}
       <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-teal-500/10 rounded-full filter blur-[100px] pointer-events-none" />
