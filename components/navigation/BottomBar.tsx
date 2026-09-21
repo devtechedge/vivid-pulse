@@ -20,85 +20,68 @@ export default function BottomBar() {
     });
   }, [pathname]);
 
+  const tabClass = (active: boolean) =>
+    cn(
+      'flex flex-col items-center justify-center gap-1 text-slate-400 p-1.5 rounded transition-all min-w-0 flex-1',
+      active ? 'text-violet-400' : 'hover:text-slate-200'
+    );
+
   return (
     <>
-      <nav className="fixed bottom-0 left-0 right-0 h-16 bg-slate-950/90 backdrop-blur-md border-t border-slate-900 flex md:hidden justify-around items-center px-4 z-30">
-        {/* Feed link */}
-        <Link
-          href="/feed"
-          className={cn(
-            'flex flex-col items-center justify-center gap-1 text-slate-400 p-1.5 rounded transition-all',
-            pathname === '/feed' ? 'text-violet-400' : 'hover:text-slate-200'
-          )}
-        >
-          <Home className="w-5 h-5" />
-          <span className="text-[9px] font-semibold uppercase tracking-wider">Daily Posts</span>
-        </Link>
+      <nav className="fixed bottom-0 left-0 right-0 h-16 bg-slate-950/90 backdrop-blur-md border-t border-slate-900 flex md:hidden items-center px-2 z-30">
+        {/* Left tabs */}
+        <div className="flex flex-1 items-center justify-evenly min-w-0">
+          <Link href="/feed" className={tabClass(pathname === '/feed')}>
+            <Home className="w-5 h-5" />
+            <span className="text-[9px] font-semibold uppercase tracking-wider truncate">Daily Posts</span>
+          </Link>
 
-        {/* Discover Link */}
-        <Link
-          href="/discover"
-          className={cn(
-            'flex flex-col items-center justify-center gap-1 text-slate-400 p-1.5 rounded transition-all',
-            pathname === '/discover' ? 'text-violet-400' : 'hover:text-slate-200'
-          )}
-        >
-          <Compass className="w-5 h-5" />
-          <span className="text-[9px] font-semibold uppercase tracking-wider">Find Friends</span>
-        </Link>
+          <Link href="/discover" className={tabClass(pathname === '/discover')}>
+            <Compass className="w-5 h-5" />
+            <span className="text-[9px] font-semibold uppercase tracking-wider truncate">Find Friends</span>
+          </Link>
 
-        {/* Neighbors Link */}
-        <Link
-          href="/neighbors"
-          className={cn(
-            'flex flex-col items-center justify-center gap-1 text-slate-400 p-1.5 rounded transition-all',
-            pathname === '/neighbors' ? 'text-violet-400' : 'hover:text-slate-200'
-          )}
-        >
-          <Coffee className="w-5 h-5" />
-          <span className="text-[9px] font-semibold uppercase tracking-wider">Neighbors</span>
-        </Link>
+          <Link href="/neighbors" className={tabClass(pathname === '/neighbors')}>
+            <Coffee className="w-5 h-5" />
+            <span className="text-[9px] font-semibold uppercase tracking-wider truncate">Neighbors</span>
+          </Link>
+        </div>
 
-        {/* Center create button */}
+        {/* Spacer keeps tab groups apart so the FAB can sit in true center */}
+        <div className="w-14 shrink-0" aria-hidden />
+
+        {/* Right tabs */}
+        <div className="flex flex-1 items-center justify-evenly min-w-0">
+          <Link href="/messages" className={tabClass(pathname === '/messages')}>
+            <MessageSquare className="w-5 h-5" />
+            <span className="text-[9px] font-semibold uppercase tracking-wider truncate">Chats</span>
+          </Link>
+
+          {currentUser ? (
+            <Link
+              href={`/${currentUser.username}`}
+              className={tabClass(pathname === `/${currentUser.username}`)}
+            >
+              <User className="w-5 h-5" />
+              <span className="text-[9px] font-semibold uppercase tracking-wider truncate">My Page</span>
+            </Link>
+          ) : (
+            <div className="flex-1" />
+          )}
+        </div>
+
+        {/* FAB pinned to viewport center of the bar */}
         {currentUser && (
           <button
             onClick={() => setIsCreateOpen(true)}
-            className="flex items-center justify-center -translate-y-3 w-12 h-12 bg-violet-600 rounded-full shadow-[0_0_15px_rgba(124,58,237,0.5)] border border-violet-500/20 text-white cursor-pointer active:scale-95 transition-all"
+            className="absolute left-1/2 -translate-x-1/2 -translate-y-3 flex items-center justify-center w-12 h-12 bg-violet-600 rounded-full shadow-[0_0_15px_rgba(124,58,237,0.5)] border border-violet-500/20 text-white cursor-pointer active:scale-95 transition-all"
+            aria-label="Create post"
           >
             <PlusSquare className="w-6 h-6" />
           </button>
         )}
-
-        {/* Messages Link */}
-        <Link
-          href="/messages"
-          className={cn(
-            'flex flex-col items-center justify-center gap-1 text-slate-400 p-1.5 rounded transition-all',
-            pathname === '/messages' ? 'text-violet-400' : 'hover:text-slate-200'
-          )}
-        >
-          <MessageSquare className="w-5 h-5" />
-          <span className="text-[9px] font-semibold uppercase tracking-wider">Chats</span>
-        </Link>
-
-        {/* Profile Link */}
-        {currentUser ? (
-          <Link
-            href={`/${currentUser.username}`}
-            className={cn(
-              'flex flex-col items-center justify-center gap-1 text-slate-400 p-1.5 rounded transition-all',
-              pathname === `/${currentUser.username}` ? 'text-violet-400' : 'hover:text-slate-200'
-            )}
-          >
-            <User className="w-5 h-5" />
-            <span className="text-[9px] font-semibold uppercase tracking-wider">My Page</span>
-          </Link>
-        ) : (
-          <div className="w-10" />
-        )}
       </nav>
 
-      {/* RENDER DYNAMIC CREATIVE CANVAS PIPELINE MODAL */}
       <CreatePostModal
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
